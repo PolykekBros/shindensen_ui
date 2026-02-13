@@ -225,11 +225,6 @@ struct NewsFeed {
 }
 
 impl Widget for NewsFeed {
-    fn handle_event(&mut self, cx: &mut Cx, event: &Event, scope: &mut Scope) {
-        self.match_event(cx, event);
-        self.handle_event(cx, event, &mut Scope::empty());
-    }
-
     fn draw_walk(&mut self, cx: &mut Cx2d, scope: &mut Scope, walk: Walk) -> DrawStep {
         self.view.draw_walk(cx, scope, walk)
     }

@@ -599,13 +599,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "not_a_chat"
-version = "0.1.0"
-dependencies = [
- "makepad-widgets",
-]
-
-[[package]]
 name = "num-traits"
 version = "0.2.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -744,6 +737,13 @@ name = "sdfer"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "27fd75ebc7c721a70d202c7cdd2beb108bbe5dfaaea68e06aff4de2f4cc240ed"
+
+[[package]]
+name = "shindensen_ui"
+version = "0.1.0"
+dependencies = [
+ "makepad-widgets",
+]
 
 [[package]]
 name = "simd-adler32"
