@@ -50,26 +50,11 @@ live_design! {
             border_size: 0.75
             border_radius: 2.5
 
-            gradient_fill_horizontal: 0.0
-            gradient_border_horizontal: 0.0
-
             color: #FFFFFF1A
             color_hover: #FFFFFF26
             color_down: #00000026
             color_focus: #FFFFFF1A
             color_disabled: #FFFFFF0D
-
-            color_2: #FFFFFF0D
-            color_2_hover: #FFFFFF26
-            color_2_down: #00000040
-            color_2_focus: #FFFFFF0D
-            color_2_disabled: #FFFFFF0D
-
-            border_color: #FFFFFF40
-            border_color_hover: #959595FF
-            border_color_down: #00000066
-            border_color_focus: #959595FF
-            border_color_disabled: #747474FF
 
             border_color_2: #00000066
             border_color_2_hover: #00000066
@@ -94,8 +79,6 @@ live_design! {
 
         draw_bg: {
             color_dither: 1.0
-            gradient_fill_horizontal: 0.0
-            gradient_border_horizontal: 0.0
 
             border_radius: 2.5
             border_size: 0.75
@@ -106,20 +89,6 @@ live_design! {
             color_focus: #00000040
             color_disabled: #00000000
             color_empty: #00000040
-
-            color_2: #0000001A
-            color_2_hover: #0000001A
-            color_2_down: #00000040
-            color_2_focus: #0000001A
-            color_2_disabled: #00000000
-            color_2_empty: #0000001A
-
-            border_color: #00000066
-            border_color_hover: #00000066
-            border_color_down: #00000099
-            border_color_focus: #0000FFFF
-            border_color_disabled: #323232FF
-            border_color_empty: #00000066
 
             border_color_2: #FFFFFF40
             border_color_2_hover: #959595FF
@@ -146,8 +115,6 @@ live_design! {
 
         draw_selection: {
             border_radius: 1.25
-            color_dither: 1.0
-            gradient_fill_horizontal: 0.0
 
             color: #0000FFFF
             color_hover: #0000FFFF
@@ -155,13 +122,6 @@ live_design! {
             color_focus: #0000FFFF
             color_disabled: #00000000
             color_empty: #00000000
-
-            color_2: #FF00FFFF
-            color_2_hover: #FFAA00FF
-            color_2_down: #FF00FFFF
-            color_2_focus: #FFAA00FF
-            color_2_disabled: #00000000
-            color_2_empty: #00000000
         }
 
         draw_cursor: {
@@ -203,7 +163,7 @@ live_design! {
         }
     }
 
-    pub DialogPage = <MessageListPage> {
+    pub DialogPage = {{DialogPage}} <MessageListPage> {
         contacts = {
             <Markdown> { body: dep("crate://self/resources/dialog.md") }
         }
@@ -218,6 +178,35 @@ live_design! {
         }
     }
 }
+
+#[derive(Live, LiveHook, Widget)]
+struct DialogPage {
+    #[deref]
+    layout: View,
+}
+
+impl DialogPage {
+    fn send_message(&mut self, text: String) {
+        log!("Send message: {}", text)
+    }
+}
+
+impl Widget for DialogPage {
+    fn handle_event(&mut self, cx: &mut Cx, event: &Event, scope: &mut Scope) {
+        let actions = cx.capture_actions(|cx| {
+            self.layout.handle_event(cx, event, scope);
+        });
+        if self.button(id!(send)).clicked(&actions) {
+            self.send_message(self.text_input(id!(msg)).text());
+            self.text_input(id!(msg)).set_text(cx, "");
+        }
+    }
+
+    fn draw_walk(&mut self, cx: &mut Cx2d, scope: &mut Scope, walk: Walk) -> DrawStep {
+        self.layout.draw_walk(cx, scope, walk)
+    }
+}
+
 #[derive(Live, LiveHook, Widget)]
 struct NewsFeed {
     #[deref]
