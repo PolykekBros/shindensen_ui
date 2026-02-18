@@ -1,3 +1,4 @@
+use crate::state::*;
 use makepad_draw::MatchEvent;
 use makepad_widgets::*;
 
@@ -57,6 +58,8 @@ live_design! {
 struct App {
     #[live]
     ui: WidgetRef,
+    #[rust]
+    state: State,
 }
 
 impl LiveRegister for App {
@@ -72,7 +75,8 @@ impl MatchEvent for App {}
 impl AppMain for App {
     fn handle_event(&mut self, cx: &mut Cx, event: &Event) {
         self.match_event(cx, event);
-        self.ui.handle_event(cx, event, &mut Scope::empty());
+        let mut scope = Scope::with_data(&mut self.state);
+        self.ui.handle_event(cx, event, &mut scope);
     }
 }
 

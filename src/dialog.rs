@@ -1,4 +1,5 @@
 use crate::makepad_widgets::*;
+use crate::state::*;
 
 live_design! {
     use link::theme::*;
@@ -152,7 +153,7 @@ live_design! {
     NewsFeed = {{NewsFeed}} {
         list = <PortalList> {
             scroll_bar: <ScrollBar> {}
-            TopSpace = <View> {height: 0.}
+            auto_tail: true
             BottomSpace = <View> {height: 100.}
 
             Post = <CachedView>{
@@ -186,8 +187,17 @@ struct DialogPage {
 }
 
 impl DialogPage {
-    fn send_message(&mut self, text: String) {
-        log!("Send message: {}", text)
+    fn send_message(&mut self, scope: &mut Scope, cx: &mut Cx) {
+        let state = scope.data.get_mut::<State>().expect("State not found.");
+        let text = self.text_input(id!(msg)).text();
+        self.text_input(id!(msg)).set_text(cx, "");
+        self.view(id!(news_feed)).redraw(cx);
+        state.add_message(&text);
+        log!(
+            "Send message: {}, number of messages {}",
+            text,
+            state.get_msg_number()
+        );
     }
 }
 
@@ -197,8 +207,7 @@ impl Widget for DialogPage {
             self.layout.handle_event(cx, event, scope);
         });
         if self.button(id!(send)).clicked(&actions) {
-            self.send_message(self.text_input(id!(msg)).text());
-            self.text_input(id!(msg)).set_text(cx, "");
+            self.send_message(scope, cx);
         }
     }
 
@@ -215,6 +224,25 @@ struct NewsFeed {
 
 impl Widget for NewsFeed {
     fn draw_walk(&mut self, cx: &mut Cx2d, scope: &mut Scope, walk: Walk) -> DrawStep {
-        self.view.draw_walk(cx, scope, walk)
+        while let Some(item) = self.view.draw_walk(cx, scope, walk).step() {
+            if let Some(mut list) = item.as_portal_list().borrow_mut() {
+                let state = scope.data.get_mut::<State>().expect("State not found.");
+                let msg_count = state.get_msg_number();
+                list.set_item_range(cx, 0, msg_count);
+                while let Some(item_id) = list.next_visible_item(cx) {
+                    let template = live_id!(Post);
+                    let item = list.item(cx, item_id, template);
+                    if let Some(msg) = state.msg_history.get(item_id) {
+                        item.label(id!(content.text)).set_text(cx, msg);
+                    }
+                    item.draw_all(cx, &mut Scope::empty());
+                }
+            }
+        }
+        DrawStep::done()
+    }
+
+    fn handle_event(&mut self, cx: &mut Cx, event: &Event, scope: &mut Scope) {
+        self.view.handle_event(cx, event, scope)
     }
 }
