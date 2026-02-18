@@ -1,13 +1,13 @@
 #[derive(Default, Clone)]
 pub struct State {
-    pub id: u64,
+    pub username: String,
     pub msg_history: Vec<String>,
 }
 
 impl State {
     pub const fn new() -> Self {
         State {
-            id: 19216801,
+            username: String::new(),
             msg_history: Vec::new(),
         }
     }

@@ -58,16 +58,15 @@ impl App {
     fn apply_visibility(&mut self, cx: &mut Cx) {
         match self.screen {
             Screen::Auth => {
-                self.ui.view(id!(auth_page)).set_visible(cx, true);
-                self.ui.view(id!(dialog_page)).set_visible(cx, false);
+                self.ui.widget(id!(auth_page)).set_visible(cx, true);
+                self.ui.widget(id!(dialog_page)).set_visible(cx, false);
             }
             Screen::Dialog => {
-                self.ui.view(id!(auth_page)).set_visible(cx, false);
-                self.ui.view(id!(dialog_page)).set_visible(cx, true);
+                self.ui.widget(id!(auth_page)).set_visible(cx, false);
+                self.ui.widget(id!(dialog_page)).set_visible(cx, true);
             }
         }
-        // self.ui.redraw(cx);
-        cx.redraw_all();
+        self.ui.redraw(cx);
     }
 }
 
@@ -92,10 +91,13 @@ impl AppMain for App {
         });
 
         if self.ui.button(id!(enter)).clicked(&actions) {
-            self.screen = Screen::Dialog;
             let nick = self.ui.text_input(id!(nickname)).text();
-            self.ui.text_input(id!(nickname)).set_text(cx, "");
-            log!("Nickname now is: {}", nick);
+            if !nick.is_empty() {
+                self.screen = Screen::Dialog;
+                self.ui.text_input(id!(nickname)).set_text(cx, "");
+                log!("Nickname now is: {}", nick);
+                self.state.username = nick;
+            }
         }
         self.apply_visibility(cx);
     }

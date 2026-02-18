@@ -16,13 +16,26 @@ live_design! {
         body = <RoundedView> {
             width: Fill
             height: Fit
-            content = <View> {
+            <View> {
                 width: Fill
                 height: Fit
-                draw_bg: {
-                    color: #FFF
+                flow: Down
+                username = <View> {
+                    width: Fill
+                    height: Fit
+                    draw_bg: {
+                        color: #000
+                    }
+                    text = <H4> { text: "" }
                 }
-                text = <P> { text: "" }
+                content = <View> {
+                    width: Fill
+                    height: Fit
+                    draw_bg: {
+                        color: #FFF
+                    }
+                    text = <P> { text: "" }
+                }
             }
         }
     }
@@ -33,9 +46,9 @@ live_design! {
             auto_tail: true
             BottomSpace = <View> {height: 100.}
 
-            Post = <CachedView>{
+            post = <CachedView> {
                 flow: Down,
-                <Post> {}
+                user_msg = <Post> {}
                 <Hr> {}
             }
         }
@@ -107,9 +120,11 @@ impl Widget for NewsFeed {
                 let msg_count = state.get_msg_number();
                 list.set_item_range(cx, 0, msg_count);
                 while let Some(item_id) = list.next_visible_item(cx) {
-                    let template = live_id!(Post);
+                    let template = live_id!(post);
                     let item = list.item(cx, item_id, template);
                     if let Some(msg) = state.msg_history.get(item_id) {
+                        item.label(id!(user_msg.username.text))
+                            .set_text(cx, &state.username);
                         item.label(id!(content.text)).set_text(cx, msg);
                     }
                     item.draw_all(cx, &mut Scope::empty());
