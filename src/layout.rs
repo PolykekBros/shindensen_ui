@@ -37,14 +37,5 @@ live_design! {
             margin: <THEME_MSPACE_V_2> {}
             scroll_bars: <ScrollBars> {show_scroll_x: false, show_scroll_y: true}
         }
-
     }
-    // pub UIZooRowH = <View> {
-    //     height: Fit
-    //     width: Fill
-    //     spacing: (THEME_SPACE_2)
-    //     flow: Right,
-    //     align: { x: 0., y: 0.5 }
-    // }
-
 }

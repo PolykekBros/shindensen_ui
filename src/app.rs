@@ -6,33 +6,9 @@ live_design! {
     use link::theme::*;
     use link::shaders::*;
     use link::widgets::*;
-    use crate::layout::*;
     use crate::dialog::*;
-
-    TestLabel = <Label> {
-        width: Fit
-        height: Fit
-        margin: { top: 10.0, right: 6.0, bottom: 10.0, left: 6.0 }
-        padding: { top: 5.0, right: 3.0, bottom: 5.0, left: 3.0 }
-        align: { x: 0.0, y: 0.5 }
-        flow: RightWrap
-        hover_actions_enabled: false
-        text: "Welcome to not a chat!"
-
-        draw_text: {
-            color_dither: 1.0
-            gradient_fill_horizontal: 0.0
-            font_scale: 1.0
-
-            color:  #fff
-            color_2:#f00
-
-            text_style: {
-                font_size: 16.0
-                line_spacing: 1.2
-            }
-        }
-    }
+    use crate::ui::*;
+    use crate::autho::*;
 
     App = {{App}} {
         ui: <Root> {
@@ -44,14 +20,28 @@ live_design! {
                 },
                 body = <View> {
                     width: Fill, height: Fill,
-                    flow: Down,
+                    flow: Overlay,
                     spacing: 0.,
                     margin: 0.,
-                    <DialogPage> {}
+                    auth_page = <LoginForm> {
+                        width: Fill, height: Fill,
+                        visible: true
+                    },
+                    dialog_page = <DialogPage> {
+                        width: Fill, height: Fill,
+                        visible: false
+                    }
                 }
             }
         }
     }
+}
+
+#[derive(Default, Debug)]
+enum Screen {
+    #[default]
+    Auth,
+    Dialog,
 }
 
 #[derive(Live, LiveHook)]
@@ -60,6 +50,25 @@ struct App {
     ui: WidgetRef,
     #[rust]
     state: State,
+    #[rust]
+    screen: Screen,
+}
+
+impl App {
+    fn apply_visibility(&mut self, cx: &mut Cx) {
+        match self.screen {
+            Screen::Auth => {
+                self.ui.view(id!(auth_page)).set_visible(cx, true);
+                self.ui.view(id!(dialog_page)).set_visible(cx, false);
+            }
+            Screen::Dialog => {
+                self.ui.view(id!(auth_page)).set_visible(cx, false);
+                self.ui.view(id!(dialog_page)).set_visible(cx, true);
+            }
+        }
+        // self.ui.redraw(cx);
+        cx.redraw_all();
+    }
 }
 
 impl LiveRegister for App {
@@ -67,6 +76,8 @@ impl LiveRegister for App {
         crate::makepad_widgets::live_design(cx);
         crate::layout::live_design(cx);
         crate::dialog::live_design(cx);
+        crate::ui::live_design(cx);
+        crate::autho::live_design(cx);
     }
 }
 
@@ -76,7 +87,17 @@ impl AppMain for App {
     fn handle_event(&mut self, cx: &mut Cx, event: &Event) {
         self.match_event(cx, event);
         let mut scope = Scope::with_data(&mut self.state);
-        self.ui.handle_event(cx, event, &mut scope);
+        let actions = cx.capture_actions(|cx| {
+            self.ui.handle_event(cx, event, &mut scope);
+        });
+
+        if self.ui.button(id!(enter)).clicked(&actions) {
+            self.screen = Screen::Dialog;
+            let nick = self.ui.text_input(id!(nickname)).text();
+            self.ui.text_input(id!(nickname)).set_text(cx, "");
+            log!("Nickname now is: {}", nick);
+        }
+        self.apply_visibility(cx);
     }
 }
 
