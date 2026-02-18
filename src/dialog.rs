@@ -82,7 +82,7 @@ impl DialogPage {
         let text = self.text_input(id!(msg)).text();
         self.text_input(id!(msg)).set_text(cx, "");
         self.view(id!(news_feed)).redraw(cx);
-        state.add_message(&text);
+        state.add_message(state.username.clone(), &text);
         log!(
             "Send message: {}, number of messages {}",
             text,
@@ -122,9 +122,8 @@ impl Widget for NewsFeed {
                 while let Some(item_id) = list.next_visible_item(cx) {
                     let template = live_id!(post);
                     let item = list.item(cx, item_id, template);
-                    if let Some(msg) = state.msg_history.get(item_id) {
-                        item.label(id!(user_msg.username.text))
-                            .set_text(cx, &state.username);
+                    if let Some((usr, msg)) = state.msg_history.get(item_id) {
+                        item.label(id!(user_msg.username.text)).set_text(cx, usr);
                         item.label(id!(content.text)).set_text(cx, msg);
                     }
                     item.draw_all(cx, &mut Scope::empty());

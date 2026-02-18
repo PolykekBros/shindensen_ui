@@ -1,7 +1,7 @@
 #[derive(Default, Clone)]
 pub struct State {
     pub username: String,
-    pub msg_history: Vec<String>,
+    pub msg_history: Vec<(String, String)>,
 }
 
 impl State {
@@ -16,7 +16,7 @@ impl State {
         self.msg_history.len()
     }
 
-    pub fn add_message(&mut self, text: &String) {
-        self.msg_history.push(text.clone());
+    pub fn add_message(&mut self, user: String, text: &String) {
+        self.msg_history.push((user, text.clone()));
     }
 }
