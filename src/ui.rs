@@ -149,4 +149,37 @@ live_design! {
             }
         }
     }
+
+    pub Post = <View> {
+        width: Fill
+        height: Fit
+        padding: { top: 10., bottom: 10.}
+
+        body = <RoundedView> {
+            width: Fill
+            height: Fit
+            <View> {
+                width: Fill
+                height: Fit
+                flow: Down
+                username = <View> {
+                    width: Fill
+                    height: Fit
+                    draw_bg: {
+                        color: #000
+                    }
+                    text = <H4> { text: "" }
+                }
+                content = <View> {
+                    width: Fill
+                    height: Fit
+                    draw_bg: {
+                        color: #FFF
+                    }
+                    text = <P> { text: "" }
+                }
+            }
+        }
+    }
+
 }

@@ -8,38 +8,6 @@ live_design! {
     use crate::layout::*;
     use crate::ui::*;
 
-    Post = <View> {
-        width: Fill
-        height: Fit
-        padding: { top: 10., bottom: 10.}
-
-        body = <RoundedView> {
-            width: Fill
-            height: Fit
-            <View> {
-                width: Fill
-                height: Fit
-                flow: Down
-                username = <View> {
-                    width: Fill
-                    height: Fit
-                    draw_bg: {
-                        color: #000
-                    }
-                    text = <H4> { text: "" }
-                }
-                content = <View> {
-                    width: Fill
-                    height: Fit
-                    draw_bg: {
-                        color: #FFF
-                    }
-                    text = <P> { text: "" }
-                }
-            }
-        }
-    }
-
     NewsFeed = {{NewsFeed}} {
         list = <PortalList> {
             scroll_bar: <ScrollBar> {}
@@ -61,9 +29,18 @@ live_design! {
         dialog = {
             news_feed = <NewsFeed> {}
             <View> {
-                height: 200.0,
-                align: { x: 1.0, y: 1.0 },
-                msg = <InputField> { empty_text: "Type a message..." }
+                width: Fill
+                height: Fit
+                flow: Right
+                <View> {
+                    width: Fill
+                    height: 150.0
+                    scroll_bars: <ScrollBars> {}
+                    msg = <InputField> {
+                            width: Fill
+                            empty_text: "Type a message..."
+                    }
+                }
                 send = <Buttons> {text: "Send"}
             }
         }
@@ -99,6 +76,9 @@ impl Widget for DialogPage {
         if self.button(id!(send)).clicked(&actions) {
             self.send_message(scope, cx);
         }
+        if let Some(_) = self.text_input(id!(msg)).returned(&actions) {
+            self.send_message(scope, cx);
+        }
     }
 
     fn draw_walk(&mut self, cx: &mut Cx2d, scope: &mut Scope, walk: Walk) -> DrawStep {
@@ -122,9 +102,10 @@ impl Widget for NewsFeed {
                 while let Some(item_id) = list.next_visible_item(cx) {
                     let template = live_id!(post);
                     let item = list.item(cx, item_id, template);
-                    if let Some((usr, msg)) = state.msg_history.get(item_id) {
-                        item.label(id!(user_msg.username.text)).set_text(cx, usr);
-                        item.label(id!(content.text)).set_text(cx, msg);
+                    if let Some(msg) = state.msg_history.get(item_id) {
+                        item.label(id!(user_msg.username.text))
+                            .set_text(cx, &msg.role);
+                        item.label(id!(content.text)).set_text(cx, &msg.content);
                     }
                     item.draw_all(cx, &mut Scope::empty());
                 }
