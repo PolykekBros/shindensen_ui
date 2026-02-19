@@ -1,16 +1,27 @@
-use makepad_widgets::makepad_micro_serde::*;
+use makepad_widgets::{WebSocket, makepad_micro_serde::*};
+
+// #[derive(Clone, Debug, Default, DeJson, SerJson)]
+// pub struct ChatMessageSend {
+//     pub chat_id: i64,
+//     pub content: String,
+// }
 
 #[derive(Clone, Debug, Default, DeJson, SerJson)]
 pub struct ChatMessage {
-    pub role: String,
+    pub id: i64,
+    pub chat_id: i64,
+    pub sender_id: i64,
     pub content: String,
+    pub timestamp: String,
+    pub files: Vec<String>,
 }
 
-#[derive(Default, Clone)]
+#[derive(Default)]
 pub struct State {
     pub username: String,
     pub msg_history: Vec<ChatMessage>,
     pub token: String,
+    pub socket: Option<WebSocket>,
 }
 
 impl State {
@@ -19,6 +30,7 @@ impl State {
             username: String::new(),
             msg_history: Vec::new(),
             token: String::new(),
+            socket: None,
         }
     }
 
@@ -26,10 +38,7 @@ impl State {
         self.msg_history.len()
     }
 
-    pub fn add_message(&mut self, user: String, text: &String) {
-        self.msg_history.push(ChatMessage {
-            role: user,
-            content: text.clone(),
-        });
+    pub fn add_message(&mut self, msg: ChatMessage) {
+        self.msg_history.push(msg);
     }
 }

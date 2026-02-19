@@ -76,27 +76,48 @@ impl App {
             self.screen = Screen::Dialog;
             self.ui.text_input(id!(nickname)).set_text(cx, "");
             log!("Nickname now is: {}", nick);
-            self.state.username = nick;
+            self.state.username = nick.clone();
+            self.authenticate(cx, nick);
         }
     }
 
-    fn update_history_with_chunk(&mut self, cx: &mut Cx, chunk: String) {
-        if let Some(last_msg) = self.state.msg_history.last_mut() {
-            if last_msg.role == "assistant" {
-                last_msg.content.push_str(&chunk);
-            } else {
-                self.state.msg_history.push(ChatMessage {
-                    role: "assistant".to_string(),
-                    content: chunk,
-                });
-            }
-        } else {
-            self.state.msg_history.push(ChatMessage {
-                role: "assistant".to_string(),
-                content: chunk,
-            });
+    pub fn authenticate(&mut self, cx: &mut Cx, user: String) {
+        let payload = AuthRequestPayload { username: user };
+
+        let mut request =
+            HttpRequest::new("http://localhost:3000/login".to_string(), HttpMethod::POST);
+        request.set_header("Content-Type".to_string(), "application/json".to_string());
+        request.set_body(payload.serialize_json().as_bytes().to_vec());
+        request.is_streaming = true;
+        log!("{:?}", request);
+
+        cx.http_request(live_id!(AuthRequest), request);
+    }
+
+    pub fn load_msg_history(&mut self, cx: &mut Cx) {
+        if self.state.token.is_empty() {
+            log!("Warning: Attempted to load history without a token.");
+            return;
         }
-        self.ui.redraw(cx);
+
+        let mut request = HttpRequest::new(
+            "http://localhost:3000/chats/1/messages".to_string(),
+            HttpMethod::GET,
+        );
+
+        request.set_header("Content-Type".to_string(), "application/json".to_string());
+        request.set_header(
+            "Authorization".to_string(),
+            format!("Bearer {}", self.state.token),
+        );
+
+        request.is_streaming = true;
+
+        log!(
+            "Requesting message history for user: {}",
+            self.state.username
+        );
+        cx.http_request(live_id!(GetHistory), request);
     }
 }
 
@@ -115,50 +136,50 @@ impl MatchEvent for App {
         for event in responses {
             match &event.response {
                 NetworkResponse::HttpResponse(response) => {
-                    if response.status_code != 200 {
+                    if response.status_code != 200 && response.status_code != 0 {
                         error!("Server Error: Status {}", response.status_code);
                         continue;
                     }
+                }
+                NetworkResponse::HttpStreamResponse(response) => {
+                    let data = response.get_string_body().unwrap();
 
                     match event.request_id {
                         live_id!(AuthRequest) => {
-                            if let Ok(auth_data) = response.get_json_body::<AuthResponse>() {
-                                self.state.username = auth_data.username;
+                            if let Ok(auth_data) = AuthResponse::deserialize_json(&data) {
                                 self.state.token = auth_data.token;
-                                log!("Authenticated as: {}", self.state.username);
+                                self.load_msg_history(cx);
+                                log!("Msg_history: {:?}", self.state.msg_history);
+                                log!(
+                                    "Authenticated as: {}, token is: {}",
+                                    self.state.username,
+                                    self.state.token
+                                );
+                            } else {
+                                error!("Failed to parse AuthResponse: {}", data);
                             }
                         }
 
                         live_id!(GetHistory) => {
-                            if let Ok(server_data) = response.get_json_body::<ServerResponse>() {
-                                if let Some(history) = server_data.history {
-                                    self.state.msg_history = history;
-                                    self.ui.redraw(cx);
+                            for line in data.split("\n\n") {
+                                if let Some(payload) = line.strip_prefix("data: ") {
+                                    let payload = payload.trim();
+                                    if payload == "[DONE]" {
+                                        continue;
+                                    }
+
+                                    // if let Ok(stream_chunk) =
+                                    //     ServerResponse::deserialize_json(payload)
+                                    // {
+                                    //     if let Some(history) = stream_chunk.history {
+                                    //         self.state.msg_history = history;
+                                    //         self.ui.redraw(cx);
+                                    //     }
+                                    // }
                                 }
                             }
                         }
                         _ => (),
-                    }
-                }
-
-                NetworkResponse::HttpStreamResponse(response) => {
-                    let data = response.get_string_body().unwrap();
-
-                    for line in data.split("\n\n") {
-                        if let Some(payload) = line.strip_prefix("data: ") {
-                            let payload = payload.trim();
-                            if payload == "[DONE]" {
-                                continue;
-                            }
-
-                            if let Ok(stream_chunk) = ServerResponse::deserialize_json(payload) {
-                                if let Some(delta) = stream_chunk.delta {
-                                    if let Some(new_text) = delta.content {
-                                        self.update_history_with_chunk(cx, new_text);
-                                    }
-                                }
-                            }
-                        }
                     }
                 }
 
@@ -187,20 +208,44 @@ impl AppMain for App {
             self.set_user(cx);
         }
         self.apply_visibility(cx);
+
+        if let Some(mut ws) = self.state.socket.take() {
+            let mut is_closed = false;
+            while let Ok(msg) = ws.try_recv() {
+                log!("received shit from webscocket: {msg:?}");
+                match msg {
+                    WebSocketMessage::String(s) => match ChatMessage::deserialize_json(&s) {
+                        Ok(msg) => {
+                            self.state.add_message(msg);
+                            self.ui.redraw(cx);
+                        }
+                        Err(e) => {
+                            error!("{e:?}");
+                        }
+                    },
+                    WebSocketMessage::Error(e) => error!("WS Error: {}", e),
+                    WebSocketMessage::Closed => {
+                        is_closed = true;
+                        log!("WS Disconnected");
+                    }
+                    _ => (),
+                }
+            }
+            if !is_closed {
+                self.state.socket = Some(ws);
+            }
+        }
     }
+}
+
+#[derive(SerJson, Debug)]
+pub struct AuthRequestPayload {
+    pub username: String,
 }
 
 #[derive(DeJson, Debug)]
 pub struct AuthResponse {
-    pub username: String,
     pub token: String,
-}
-
-#[derive(DeJson, Debug)]
-pub struct ServerResponse {
-    pub content: Option<String>,
-    pub history: Option<Vec<ChatMessage>>,
-    pub delta: Option<Delta>,
 }
 
 #[derive(DeJson, Debug)]

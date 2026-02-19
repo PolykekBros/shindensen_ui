@@ -54,17 +54,38 @@ struct DialogPage {
 }
 
 impl DialogPage {
-    fn send_message(&mut self, scope: &mut Scope, cx: &mut Cx) {
+    pub fn send_message_ws(&mut self, scope: &mut Scope, cx: &mut Cx) {
         let state = scope.data.get_mut::<State>().expect("State not found.");
+
+        if state.token.is_empty() {
+            error!("Cannot send message: No auth token.");
+            return;
+        }
+
         let text = self.text_input(id!(msg)).text();
         self.text_input(id!(msg)).set_text(cx, "");
+
+        if state.socket.is_none() {
+            let url = "ws://localhost:3000/ws".to_string();
+            let mut request = HttpRequest::new(url, HttpMethod::GET);
+            request.set_header(
+                "Authorization".to_string(),
+                format!("Bearer {}", state.token),
+            );
+            state.socket = Some(WebSocket::open(request));
+            log!("Opening WebSocket...")
+        }
+
+        if let Some(ws) = &mut state.socket {
+            let payload = format!(r#"{{"chat_id": 1, "content": "{}", "files": []}}"#, text);
+            if let Err(e) = ws.send_string(payload) {
+                error!("Failed to send WS message: {:?}", e);
+            } else {
+                log!("Sent WS message: {}", text);
+            }
+        }
+
         self.view(id!(news_feed)).redraw(cx);
-        state.add_message(state.username.clone(), &text);
-        log!(
-            "Send message: {}, number of messages {}",
-            text,
-            state.get_msg_number()
-        );
     }
 }
 
@@ -73,11 +94,14 @@ impl Widget for DialogPage {
         let actions = cx.capture_actions(|cx| {
             self.layout.handle_event(cx, event, scope);
         });
-        if self.button(id!(send)).clicked(&actions) {
-            self.send_message(scope, cx);
-        }
-        if let Some(_) = self.text_input(id!(msg)).returned(&actions) {
-            self.send_message(scope, cx);
+
+        if self.button(id!(send)).clicked(&actions)
+            || self.text_input(id!(msg)).returned(&actions).is_some()
+        {
+            let text = self.text_input(id!(msg)).text();
+            if !text.is_empty() {
+                self.send_message_ws(scope, cx);
+            }
         }
     }
 
@@ -104,7 +128,7 @@ impl Widget for NewsFeed {
                     let item = list.item(cx, item_id, template);
                     if let Some(msg) = state.msg_history.get(item_id) {
                         item.label(id!(user_msg.username.text))
-                            .set_text(cx, &msg.role);
+                            .set_text(cx, &msg.chat_id.to_string());
                         item.label(id!(content.text)).set_text(cx, &msg.content);
                     }
                     item.draw_all(cx, &mut Scope::empty());
