@@ -76,14 +76,6 @@ impl App {
         self.ui.redraw(cx);
     }
 
-    fn new_chat_init(&mut self, _cx: &mut Cx) {
-        let chat_name = self.ui.text_input(id!(chat_name)).text();
-        if !chat_name.is_empty() {
-            log!("Created new chat!")
-        }
-        self.state.screen = Screen::Dialog;
-    }
-
     pub fn load_chats(&mut self, cx: &mut Cx) {
         if self.state.token.is_empty() {
             log!("Warning: Attempted to load chats without a token.");
@@ -98,6 +90,11 @@ impl App {
         request.is_streaming = true;
         log!("Requesting chats list for user: {}", self.state.username);
         cx.http_request(live_id!(GetChats), request);
+    }
+
+    fn new_chat_init(&mut self, cx: &mut Cx) {
+        self.state.screen = Screen::Dialog;
+        self.ui.text_input(id!(chat_name)).set_text(cx, "");
     }
 }
 
@@ -171,6 +168,16 @@ impl MatchEvent for App {
                                 error!("Deserialzing chats response: {e:?}: {data}");
                             }
                         },
+
+                        live_id!(UserInfo) => {
+                            if let Ok(user_info) = UserInfoResponse::deserialize_json(&data) {
+                                self.new_chat_init(cx);
+                                log!("Started chat with: {}", user_info.username);
+                            } else {
+                                error!("Failed to parse UserInfoResponse: {}", data);
+                            }
+                        }
+
                         _ => (),
                     }
                 }
@@ -189,17 +196,7 @@ impl AppMain for App {
     fn handle_event(&mut self, cx: &mut Cx, event: &Event) {
         self.match_event(cx, event);
         let mut scope = Scope::with_data(&mut self.state);
-        let actions = cx.capture_actions(|cx| {
-            self.ui.handle_event(cx, event, &mut scope);
-        });
-        if self.ui.button(id!(create)).clicked(&actions) {
-            self.new_chat_init(cx);
-        }
-        if let Some(_) = self.ui.text_input(id!(chat_name)).returned(&actions) {
-            self.new_chat_init(cx);
-        }
-        self.apply_visibility(cx);
-
+        self.ui.handle_event(cx, event, &mut scope);
         if let Some(mut ws) = self.state.socket.take() {
             let mut is_closed = false;
             while let Ok(msg) = ws.try_recv() {
@@ -226,6 +223,7 @@ impl AppMain for App {
                 self.state.socket = Some(ws);
             }
         }
+        self.apply_visibility(cx);
     }
 }
 
@@ -242,6 +240,15 @@ pub struct Delta {
 #[derive(Clone, Debug, Default, DeJson, SerJson)]
 pub struct MsgHistoryResponse {
     pub files: Vec<String>,
+}
+
+#[derive(Clone, Debug, Default, DeJson, SerJson)]
+pub struct UserInfoResponse {
+    pub id: i64,
+    pub username: String,
+    pub display_name: Option<String>,
+    pub bio: Option<String>,
+    pub image_id: Option<i64>,
 }
 
 type MsgHistory = Vec<ChatMessage>;
