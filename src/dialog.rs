@@ -1,3 +1,4 @@
+use crate::app::WS_URL;
 use crate::makepad_widgets::*;
 use crate::state::*;
 
@@ -7,6 +8,7 @@ live_design! {
     use link::widgets::*;
     use crate::layout::*;
     use crate::ui::*;
+    use crate::dialog_list::*;
 
     NewsFeed = {{NewsFeed}} {
         list = <PortalList> {
@@ -17,14 +19,14 @@ live_design! {
             post = <CachedView> {
                 flow: Down,
                 user_msg = <Post> {}
-                <Hr> {}
             }
         }
     }
 
     pub DialogPage = {{DialogPage}} <MessageListPage> {
         contacts = {
-            <Markdown> { body: dep("crate://self/resources/dialog.md") }
+            <ChatList> {}
+            // <Markdown> { body: dep("crate://self/resources/dialog.md") }
         }
         dialog = {
             news_feed = <NewsFeed> {}
@@ -66,7 +68,7 @@ impl DialogPage {
         self.text_input(id!(msg)).set_text(cx, "");
 
         if state.socket.is_none() {
-            let url = "ws://localhost:3000/ws".to_string();
+            let url = format!("{WS_URL}/ws");
             let mut request = HttpRequest::new(url, HttpMethod::GET);
             request.set_header(
                 "Authorization".to_string(),
@@ -77,7 +79,11 @@ impl DialogPage {
         }
 
         if let Some(ws) = &mut state.socket {
-            let payload = format!(r#"{{"chat_id": 1, "content": "{}", "files": []}}"#, text);
+            let payload = format!(
+                r#"{{"chat_id": {}, "content": "{}", "files": []}}"#,
+                state.open_chat_id.unwrap(),
+                text
+            );
             if let Err(e) = ws.send_string(payload) {
                 error!("Failed to send WS message: {:?}", e);
             } else {
@@ -120,16 +126,23 @@ impl Widget for NewsFeed {
     fn draw_walk(&mut self, cx: &mut Cx2d, scope: &mut Scope, walk: Walk) -> DrawStep {
         while let Some(item) = self.view.draw_walk(cx, scope, walk).step() {
             if let Some(mut list) = item.as_portal_list().borrow_mut() {
-                let state = scope.data.get_mut::<State>().expect("State not found.");
-                let msg_count = state.get_msg_number();
+                let state = scope.data.get::<State>().expect("State not found.");
+                let msg_count = state.get_message_number();
                 list.set_item_range(cx, 0, msg_count);
                 while let Some(item_id) = list.next_visible_item(cx) {
                     let template = live_id!(post);
                     let item = list.item(cx, item_id, template);
-                    if let Some(msg) = state.msg_history.get(item_id) {
-                        item.label(id!(user_msg.username.text))
-                            .set_text(cx, &msg.chat_id.to_string());
-                        item.label(id!(content.text)).set_text(cx, &msg.content);
+                    if let Some(chat_id) = state.open_chat_id {
+                        match state.msg_history.get(&chat_id) {
+                            Some(messages) => {
+                                if let Some(msg) = messages.get(item_id) {
+                                    item.label(id!(username.text))
+                                        .set_text(cx, &msg.sender_id.to_string());
+                                    item.label(id!(content.text)).set_text(cx, &msg.content);
+                                }
+                            }
+                            None => log!("Chat is empty!"),
+                        }
                     }
                     item.draw_all(cx, &mut Scope::empty());
                 }

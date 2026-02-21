@@ -1,10 +1,6 @@
-use makepad_widgets::{WebSocket, makepad_micro_serde::*};
+use std::collections::HashMap;
 
-// #[derive(Clone, Debug, Default, DeJson, SerJson)]
-// pub struct ChatMessageSend {
-//     pub chat_id: i64,
-//     pub content: String,
-// }
+use makepad_widgets::{WebSocket, makepad_micro_serde::*};
 
 #[derive(Clone, Debug, Default, DeJson, SerJson)]
 pub struct ChatMessage {
@@ -16,29 +12,54 @@ pub struct ChatMessage {
     pub files: Vec<String>,
 }
 
+#[derive(Clone, Debug, Default, DeJson, SerJson)]
+pub struct ChatInfo {
+    pub id: i64,
+    pub name: Option<String>,
+    pub chat_type: String,
+    pub created_at: String,
+}
+
 #[derive(Default)]
 pub struct State {
     pub username: String,
-    pub msg_history: Vec<ChatMessage>,
+    pub chat_info: HashMap<i64, ChatInfo>,
+    pub msg_history: HashMap<i64, Vec<ChatMessage>>,
+    pub open_chat_id: Option<i64>,
     pub token: String,
     pub socket: Option<WebSocket>,
 }
 
 impl State {
-    pub const fn new() -> Self {
+    pub fn new() -> Self {
         State {
             username: String::new(),
-            msg_history: Vec::new(),
+            chat_info: HashMap::new(),
+            msg_history: HashMap::new(),
+            open_chat_id: None,
             token: String::new(),
             socket: None,
         }
     }
 
-    pub fn get_msg_number(&self) -> usize {
-        self.msg_history.len()
+    pub fn get_chats_number(&self) -> usize {
+        self.chat_info.len()
+    }
+
+    pub fn get_message_number(&self) -> usize {
+        if let Some(chat_id) = self.open_chat_id {
+            let msgs = self.msg_history.get(&chat_id);
+            match msgs {
+                Some(m) => m.len(),
+                None => 0,
+            }
+        } else {
+            0
+        }
     }
 
     pub fn add_message(&mut self, msg: ChatMessage) {
-        self.msg_history.push(msg);
+        let chat_id = msg.chat_id;
+        self.msg_history.entry(chat_id).or_insert(vec![]).push(msg);
     }
 }

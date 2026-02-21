@@ -153,31 +153,74 @@ live_design! {
     pub Post = <View> {
         width: Fill
         height: Fit
-        padding: { top: 10., bottom: 10.}
+        padding: { top: 0., bottom: 0. }
+        margin: { top: 10.0, bottom: 10. }
 
         body = <RoundedView> {
             width: Fill
             height: Fit
-            <View> {
+            flow: Down
+            draw_bg: {
+                color: #3f497e
+                border_size: 1.5
+                border_color: #2d2c40
+            }
+
+            username = <RoundedView> {
                 width: Fill
                 height: Fit
-                flow: Down
-                username = <View> {
-                    width: Fill
-                    height: Fit
-                    draw_bg: {
-                        color: #000
-                    }
-                    text = <H4> { text: "" }
+                padding: { top: 5., right: 10.,bottom: 5., left: 10. }
+                show_bg: true
+                draw_bg: {
+                    color: #323456
+                    border_size: 1.5
+                    border_color: #2d2c40
                 }
-                content = <View> {
-                    width: Fill
-                    height: Fit
-                    draw_bg: {
-                        color: #FFF
-                    }
-                    text = <P> { text: "" }
+                text = <H4> { text: "" }
+            }
+            content = <View> {
+                width: Fill
+                height: Fit
+                padding: { top: 10., right: 10.,bottom: 10., left: 10. }
+                text = <P> { text: "" }
+            }
+        }
+    }
+
+    pub Chats = <View> {
+        width: Fill
+        height: Fit
+        cursor: Hand
+        padding: { top: 0., bottom: 0. }
+        margin: { top: 10.0, bottom: 10. }
+
+        body = <RoundedView> {
+            width: Fill
+            height: Fit
+            flow: Down
+            draw_bg: {
+                color: #3f497e
+                border_size: 1.5
+                border_color: #2d2c40
+            }
+
+            target_usr = <RoundedView> {
+                width: Fill
+                height: Fit
+                padding: { top: 5., right: 10.,bottom: 5., left: 10. }
+                show_bg: true
+                draw_bg: {
+                    color: #323456
+                    border_size: 1.5
+                    border_color: #2d2c40
                 }
+                text = <H4> { text: "" }
+            }
+            last_msg = <View> {
+                width: Fill
+                height: Fit
+                padding: { top: 10., right: 10.,bottom: 10., left: 10. }
+                text = <P> { text: "" }
             }
         }
     }
