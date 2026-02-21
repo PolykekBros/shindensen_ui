@@ -60,7 +60,7 @@ impl Widget for NewChat {
             if btn_create.clicked(&actions) {
                 self.user_search(cx, state);
             }
-            if let Some(_) = self.text_input(id!(chat_name)).returned(&actions) {
+            if self.text_input(id!(chat_name)).returned(&actions).is_some() {
                 self.user_search(cx, state);
             }
         }

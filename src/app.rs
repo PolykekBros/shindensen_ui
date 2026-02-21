@@ -1,3 +1,4 @@
+#![allow(clippy::question_mark)]
 use crate::state::*;
 use crate::shindensen_client::*;
 use makepad_draw::MatchEvent;

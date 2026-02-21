@@ -1,7 +1,9 @@
+#![allow(clippy::question_mark)]
 use makepad_micro_serde::*;
 use makepad_widgets::*;
 use std::collections::HashMap;
 
+#[derive(Default)]
 pub struct ShinDensenClient {
     api_url: String,
     ws_url: String,
@@ -66,18 +68,6 @@ pub enum ShinDensenClientAction {
     NetworkError(String),
     #[default]
     None,
-}
-
-impl Default for ShinDensenClient {
-    fn default() -> Self {
-        Self {
-            api_url: String::new(),
-            ws_url: String::new(),
-            stream_chunks: HashMap::new(),
-            socket: None,
-            token: None,
-        }
-    }
 }
 
 impl ShinDensenClient {

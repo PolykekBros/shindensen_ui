@@ -47,7 +47,7 @@ impl Widget for ChatList {
         while let Some(item) = self.view.draw_walk(cx, scope, walk).step() {
             if let Some(mut list) = item.as_portal_list().borrow_mut() {
                 let state = scope.data.get::<State>().expect("State not found.");
-                let chat_ids: Vec<i64> = state.chat_info.keys().map(|s| s.clone()).collect();
+                let chat_ids: Vec<i64> = state.chat_info.keys().copied().collect();
                 list.set_item_range(cx, 0, chat_ids.len());
                 while let Some(item_id) = list.next_visible_item(cx) {
                     let template = live_id!(chat);
@@ -81,16 +81,16 @@ impl Widget for ChatList {
             let item_widget = portal_list.item(cx, item_id, live_id!(chat));
             let body_view = item_widget.view(id!(body));
             for action in &actions {
-                if let ViewAction::FingerUp(fe) = action.as_widget_action().cast() {
-                    if body_view.area().rect(cx).contains(fe.abs) {
-                        let state = scope.data.get_mut::<State>().expect("State not found.");
-                        let chat_ids: Vec<i64> = state.chat_info.keys().cloned().collect();
-                        if let Some(selected_id) = chat_ids.get(item_id) {
-                            state.open_chat_id = Some(*selected_id);
-                            self.load_msg_history(cx, state);
-                            log!("Opened chat: {}", *selected_id);
-                            cx.redraw_all();
-                        }
+                if let ViewAction::FingerUp(fe) = action.as_widget_action().cast()
+                    && body_view.area().rect(cx).contains(fe.abs)
+                {
+                    let state = scope.data.get_mut::<State>().expect("State not found.");
+                    let chat_ids: Vec<i64> = state.chat_info.keys().copied().collect();
+                    if let Some(selected_id) = chat_ids.get(item_id) {
+                        state.open_chat_id = Some(*selected_id);
+                        self.load_msg_history(cx, state);
+                        log!("Opened chat: {}", *selected_id);
+                        cx.redraw_all();
                     }
                 }
             }

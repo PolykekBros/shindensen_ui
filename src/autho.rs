@@ -98,7 +98,7 @@ impl Widget for LoginForm {
         if self.button(id!(enter)).clicked(&actions) {
             self.set_user(cx, scope);
         }
-        if let Some(_) = self.text_input(id!(nickname)).returned(&actions) {
+        if self.text_input(id!(nickname)).returned(&actions).is_some() {
             self.set_user(cx, scope);
         }
     }
