@@ -9,7 +9,7 @@ live_design! {
     use crate::ui::*;
 
     pub ChatList = {{ChatList}} {
-
+        flow: Down
         chat_list = <PortalList> {
             scroll_bar: <ScrollBar> {}
             auto_tail: true
@@ -18,6 +18,10 @@ live_design! {
             chat = <CachedView> {
                 user_chat = <Chats> {}
             }
+        }
+        new_chat_btn = <Buttons> {
+            width: Fill, height: Fit
+            text: "Add new chat"
         }
     }
 }
@@ -83,6 +87,7 @@ impl Widget for ChatList {
         let actions = cx.capture_actions(|cx| {
             self.view.handle_event(cx, event, scope);
         });
+
         let portal_list = self.view.portal_list(id!(chat_list));
         for (item_id, _) in portal_list.items_with_actions(&actions) {
             let item_widget = portal_list.item(cx, item_id, live_id!(chat));
@@ -101,6 +106,12 @@ impl Widget for ChatList {
                     }
                 }
             }
+        }
+
+        let state = scope.data.get_mut::<State>().expect("State not found.");
+        let new_chat_btn = self.button(id!(new_chat_btn));
+        if new_chat_btn.clicked(&actions) {
+            state.screen = Screen::NewChatInit;
         }
     }
 }

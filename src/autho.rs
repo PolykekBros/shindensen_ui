@@ -1,3 +1,6 @@
+use crate::app::API_URL;
+use crate::state::*;
+use makepad_micro_serde::*;
 use makepad_widgets::*;
 
 live_design! {
@@ -5,7 +8,6 @@ live_design! {
     use link::shaders::*;
     use link::widgets::*;
     use crate::layout::*;
-    use crate::dialog::*;
     use crate::ui::*;
 
     pub LoginForm = {{LoginForm}} {
@@ -35,12 +37,88 @@ struct LoginForm {
     view: View,
 }
 
+#[derive(SerJson, Debug)]
+pub struct AuthRequestPayload {
+    pub username: String,
+}
+
+impl LoginForm {
+    fn set_user(&mut self, cx: &mut Cx, scope: &mut Scope) {
+        let state = scope.data.get_mut::<State>().expect("State not found.");
+        let nick = self.text_input(id!(nickname)).text();
+        if !nick.is_empty() {
+            state.screen = Screen::Dialog;
+            self.text_input(id!(nickname)).set_text(cx, "");
+            log!("Nickname now is: {}", nick);
+            state.username = nick.clone();
+            self.authenticate(cx, nick);
+        }
+    }
+
+    pub fn authenticate(&mut self, cx: &mut Cx, user: String) {
+        let payload = AuthRequestPayload { username: user };
+
+        let mut request = HttpRequest::new(format!("{API_URL}/login"), HttpMethod::POST);
+        request.set_header("Content-Type".to_string(), "application/json".to_string());
+        request.set_body(payload.serialize_json().as_bytes().to_vec());
+        request.is_streaming = true;
+        log!("{:?}", request);
+
+        cx.http_request(live_id!(AuthRequest), request);
+    }
+}
+
+// impl MatchEvent for LoginForm {
+//     fn handle_network_responses(&mut self, cx: &mut Cx, responses: &NetworkResponsesEvent) {
+//         for event in responses {
+//             match &event.response {
+//                 NetworkResponse::HttpResponse(response) => {
+//                     if response.status_code != 200 && response.status_code != 0 {
+//                         error!("Server Error: Status {}", response.status_code);
+//                         continue;
+//                     }
+//                 }
+//                 NetworkResponse::HttpStreamResponse(response) => {
+//                     if response.status_code != 200 && response.status_code != 0 {
+//                         error!("API response: {response:?}");
+//                     }
+//                     let data = response.get_string_body().unwrap();
+//                     if event.request_id == live_id!(AuthRequest) {
+//                         if let Ok(auth_data) = AuthResponse::deserialize_json(&data) {
+//                             let state = scope.data.get_mut::<State>().expect("State not found.");
+//                             state.token = auth_data.token;
+//                             self.load_chats(cx);
+//                             log!(
+//                                 "Authenticated as: {}, token is: {}",
+//                                 state.username,
+//                                 state.token
+//                             );
+//                         } else {
+//                             error!("Failed to parse AuthResponse: {}", data);
+//                         }
+//                     }
+//                 }
+//                 _ => (),
+//             }
+//         }
+//     }
+// }
+
 impl Widget for LoginForm {
     fn draw_walk(&mut self, cx: &mut Cx2d, scope: &mut Scope, walk: Walk) -> DrawStep {
         self.view.draw_walk(cx, scope, walk)
     }
 
     fn handle_event(&mut self, cx: &mut Cx, event: &Event, scope: &mut Scope) {
-        self.view.handle_event(cx, event, scope);
+        let actions = cx.capture_actions(|cx| {
+            self.view.handle_event(cx, event, scope);
+        });
+
+        if self.button(id!(enter)).clicked(&actions) {
+            self.set_user(cx, scope);
+        }
+        if let Some(_) = self.text_input(id!(nickname)).returned(&actions) {
+            self.set_user(cx, scope);
+        }
     }
 }

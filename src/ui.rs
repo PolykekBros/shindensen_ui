@@ -150,6 +150,18 @@ live_design! {
         }
     }
 
+    pub AlertField = <RoundedView> {
+        width: Fit
+        height: Fit
+        visible: true,
+        draw_bg: {
+            color: #FF2400
+            border_size: 1.5
+            border_color: #2d2c40
+        }
+        alert_text = <TextLabel> { }
+    }
+
     pub Post = <View> {
         width: Fill
         height: Fit

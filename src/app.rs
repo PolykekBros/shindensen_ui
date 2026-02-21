@@ -13,6 +13,7 @@ live_design! {
     use crate::dialog::*;
     use crate::ui::*;
     use crate::autho::*;
+    use crate::new_chat::*;
 
     App = {{App}} {
         ui: <Root> {
@@ -35,17 +36,14 @@ live_design! {
                         width: Fill, height: Fill,
                         visible: false
                     }
+                    new_chat = <NewChat> {
+                        width: Fill, height: Fill,
+                        visible: false
+                    }
                 }
             }
         }
     }
-}
-
-#[derive(Default, Debug)]
-enum Screen {
-    #[default]
-    Auth,
-    Dialog,
 }
 
 #[derive(Live, LiveHook)]
@@ -54,46 +52,36 @@ struct App {
     ui: WidgetRef,
     #[rust]
     state: State,
-    #[rust]
-    screen: Screen,
 }
 
 impl App {
     fn apply_visibility(&mut self, cx: &mut Cx) {
-        match self.screen {
+        match self.state.screen {
             Screen::Auth => {
                 self.ui.widget(id!(auth_page)).set_visible(cx, true);
                 self.ui.widget(id!(dialog_page)).set_visible(cx, false);
+                self.ui.widget(id!(new_chat)).set_visible(cx, false);
             }
             Screen::Dialog => {
                 self.ui.widget(id!(auth_page)).set_visible(cx, false);
                 self.ui.widget(id!(dialog_page)).set_visible(cx, true);
+                self.ui.widget(id!(new_chat)).set_visible(cx, false);
+            }
+            Screen::NewChatInit => {
+                self.ui.widget(id!(auth_page)).set_visible(cx, false);
+                self.ui.widget(id!(dialog_page)).set_visible(cx, false);
+                self.ui.widget(id!(new_chat)).set_visible(cx, true);
             }
         }
         self.ui.redraw(cx);
     }
 
-    fn set_user(&mut self, cx: &mut Cx) {
-        let nick = self.ui.text_input(id!(nickname)).text();
-        if !nick.is_empty() {
-            self.screen = Screen::Dialog;
-            self.ui.text_input(id!(nickname)).set_text(cx, "");
-            log!("Nickname now is: {}", nick);
-            self.state.username = nick.clone();
-            self.authenticate(cx, nick);
+    fn new_chat_init(&mut self, _cx: &mut Cx) {
+        let chat_name = self.ui.text_input(id!(chat_name)).text();
+        if !chat_name.is_empty() {
+            log!("Created new chat!")
         }
-    }
-
-    pub fn authenticate(&mut self, cx: &mut Cx, user: String) {
-        let payload = AuthRequestPayload { username: user };
-
-        let mut request = HttpRequest::new(format!("{API_URL}/login"), HttpMethod::POST);
-        request.set_header("Content-Type".to_string(), "application/json".to_string());
-        request.set_body(payload.serialize_json().as_bytes().to_vec());
-        request.is_streaming = true;
-        log!("{:?}", request);
-
-        cx.http_request(live_id!(AuthRequest), request);
+        self.state.screen = Screen::Dialog;
     }
 
     pub fn load_chats(&mut self, cx: &mut Cx) {
@@ -121,6 +109,7 @@ impl LiveRegister for App {
         crate::ui::live_design(cx);
         crate::autho::live_design(cx);
         crate::dialog_list::live_design(cx);
+        crate::new_chat::live_design(cx);
     }
 }
 
@@ -203,12 +192,11 @@ impl AppMain for App {
         let actions = cx.capture_actions(|cx| {
             self.ui.handle_event(cx, event, &mut scope);
         });
-
-        if self.ui.button(id!(enter)).clicked(&actions) {
-            self.set_user(cx);
+        if self.ui.button(id!(create)).clicked(&actions) {
+            self.new_chat_init(cx);
         }
-        if let Some(_) = self.ui.text_input(id!(nickname)).returned(&actions) {
-            self.set_user(cx);
+        if let Some(_) = self.ui.text_input(id!(chat_name)).returned(&actions) {
+            self.new_chat_init(cx);
         }
         self.apply_visibility(cx);
 
@@ -239,11 +227,6 @@ impl AppMain for App {
             }
         }
     }
-}
-
-#[derive(SerJson, Debug)]
-pub struct AuthRequestPayload {
-    pub username: String,
 }
 
 #[derive(DeJson, Debug)]

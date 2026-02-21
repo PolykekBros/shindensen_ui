@@ -4,5 +4,6 @@ pub mod autho;
 pub mod dialog;
 pub mod dialog_list;
 pub mod layout;
+pub mod new_chat;
 pub mod state;
 pub mod ui;

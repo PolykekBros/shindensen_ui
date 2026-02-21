@@ -20,6 +20,14 @@ pub struct ChatInfo {
     pub created_at: String,
 }
 
+#[derive(Default, Debug)]
+pub enum Screen {
+    #[default]
+    Auth,
+    Dialog,
+    NewChatInit,
+}
+
 #[derive(Default)]
 pub struct State {
     pub username: String,
@@ -28,6 +36,7 @@ pub struct State {
     pub open_chat_id: Option<i64>,
     pub token: String,
     pub socket: Option<WebSocket>,
+    pub screen: Screen,
 }
 
 impl State {
@@ -39,6 +48,7 @@ impl State {
             open_chat_id: None,
             token: String::new(),
             socket: None,
+            screen: Screen::default(),
         }
     }
 

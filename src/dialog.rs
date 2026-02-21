@@ -67,31 +67,35 @@ impl DialogPage {
         let text = self.text_input(id!(msg)).text();
         self.text_input(id!(msg)).set_text(cx, "");
 
-        if state.socket.is_none() {
-            let url = format!("{WS_URL}/ws");
-            let mut request = HttpRequest::new(url, HttpMethod::GET);
-            request.set_header(
-                "Authorization".to_string(),
-                format!("Bearer {}", state.token),
-            );
-            state.socket = Some(WebSocket::open(request));
-            log!("Opening WebSocket...")
-        }
-
-        if let Some(ws) = &mut state.socket {
-            let payload = format!(
-                r#"{{"chat_id": {}, "content": "{}", "files": []}}"#,
-                state.open_chat_id.unwrap(),
-                text
-            );
-            if let Err(e) = ws.send_string(payload) {
-                error!("Failed to send WS message: {:?}", e);
-            } else {
-                log!("Sent WS message: {}", text);
+        if !state.open_chat_id.is_none() {
+            if state.socket.is_none() {
+                let url = format!("{WS_URL}/ws");
+                let mut request = HttpRequest::new(url, HttpMethod::GET);
+                request.set_header(
+                    "Authorization".to_string(),
+                    format!("Bearer {}", state.token),
+                );
+                state.socket = Some(WebSocket::open(request));
+                log!("Opening WebSocket...")
             }
-        }
 
-        self.view(id!(news_feed)).redraw(cx);
+            if let Some(ws) = &mut state.socket {
+                let payload = format!(
+                    r#"{{"chat_id": {}, "content": "{}", "files": []}}"#,
+                    state.open_chat_id.unwrap(),
+                    text
+                );
+                if let Err(e) = ws.send_string(payload) {
+                    error!("Failed to send WS message: {:?}", e);
+                } else {
+                    log!("Sent WS message: {}", text);
+                }
+            }
+
+            self.view(id!(news_feed)).redraw(cx);
+        } else {
+            log!("Error: dialog is not opened!")
+        }
     }
 }
 
