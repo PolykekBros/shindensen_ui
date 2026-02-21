@@ -32,7 +32,7 @@ pub struct ChatMessage {
 
 #[derive(Clone, Debug)]
 pub enum ShinDensenClientAction {
-    Authentificated,
+    Authenticated,
     NewMessage(ChatMessage),
     Token(String),
     Error(String),
@@ -58,7 +58,8 @@ impl ShinDensenClient {
         payload: Option<T>,
         live_id: LiveId,
     ) {
-        let mut request = HttpRequest::new(format!("{}/{suffix}", self.api_url), HttpMethod::GET);
+        let method = if payload.is_some() { HttpMethod::POST } else { HttpMethod::GET };
+        let mut request = HttpRequest::new(format!("{}/{suffix}", self.api_url), method);
         if let Some(payload) = payload {
             request.set_header("Content-Type".to_string(), "application/json".to_string());
             request.set_body(payload.serialize_json().as_bytes().to_vec());
@@ -82,22 +83,26 @@ impl ShinDensenClient {
 
     pub fn handle_signal(&mut self, cx: &mut Cx) {
         if let Some(socket) = &mut self.socket {
-            match socket.try_recv() {
-                Ok(WebSocketMessage::String(data)) => match ChatMessage::deserialize_json(&data) {
-                    Ok(msg) => cx.action(ShinDensenClientAction::NewMessage(msg)),
-                    Err(e) => cx.action(ShinDensenClientAction::Error(format!(
-                        "Failed to parse WS message: {e:?}",
-                    ))),
-                },
-                Ok(e @ WebSocketMessage::Closed) => {
-                    cx.action(ShinDensenClientAction::NetworkError(format!("{e:?}")));
-                    self.open_socket(cx);
+            while let Ok(msg) = socket.try_recv() {
+                match msg {
+                    WebSocketMessage::String(data) => match ChatMessage::deserialize_json(&data) {
+                        Ok(msg) => cx.action(ShinDensenClientAction::NewMessage(msg)),
+                        Err(e) => cx.action(ShinDensenClientAction::Error(format!(
+                            "Failed to parse WS message: {e:?}",
+                        ))),
+                    },
+                    WebSocketMessage::Closed => {
+                        cx.action(ShinDensenClientAction::NetworkError("WebSocket Closed".to_string()));
+                        self.open_socket(cx);
+                        break;
+                    }
+                    WebSocketMessage::Error(e) => {
+                        cx.action(ShinDensenClientAction::NetworkError(format!("{e:?}")));
+                        self.open_socket(cx);
+                        break;
+                    }
+                    _ => (),
                 }
-                Ok(WebSocketMessage::Error(e)) => {
-                    cx.action(ShinDensenClientAction::NetworkError(format!("{e:?}")));
-                    self.open_socket(cx);
-                }
-                _ => (),
             }
         }
     }
@@ -138,7 +143,7 @@ impl ShinDensenClient {
                             Ok(data) => {
                                 self.token = Some(data.token);
                                 self.open_socket(cx);
-                                cx.action(ShinDensenClientAction::Authentificated);
+                                cx.action(ShinDensenClientAction::Authenticated);
                             }
                             Err(e) => {
                                 cx.action(ShinDensenClientAction::Error(format!("{e:?}")));
