@@ -141,8 +141,14 @@ impl MatchEvent for App {
                     // Token is handled internally by client, but we could store it if needed
                 }
                 ShinDensenClientAction::UserInfo(info) => {
+                    self.state.client.initiate_chat(cx, info.username.clone());
+                    log!("User found: {}, initiating chat...", info.username);
+                }
+                ShinDensenClientAction::InitiateChat(res) => {
+                    self.state.open_chat_id = Some(res.chat_id);
+                    self.load_chats(cx);
                     self.new_chat_init(cx);
-                    log!("Started chat with: {}", info.username);
+                    log!("Chat initiated/found: id {}, status: {}", res.chat_id, res.status);
                 }
                 ShinDensenClientAction::Error(e) => {
                     error!("Client Error: {}", e);

@@ -24,9 +24,20 @@ pub struct ChatMessagePayload {
     pub files: Vec<String>,
 }
 
+#[derive(SerJson, Debug)]
+pub struct InitiateChatPayload {
+    pub target_username: String,
+}
+
 #[derive(DeJson, Debug)]
 pub struct AuthResponse {
     pub token: String,
+}
+
+#[derive(Clone, DeJson, Debug, PartialEq)]
+pub struct InitiateChatResponse {
+    pub chat_id: i64,
+    pub status: String,
 }
 
 #[derive(Clone, Debug, Default, DeJson, SerJson, PartialEq)]
@@ -64,6 +75,7 @@ pub enum ShinDensenClientAction {
     History(Vec<ChatMessage>),
     Token(String),
     UserInfo(UserInfoResponse),
+    InitiateChat(InitiateChatResponse),
     Error(String),
     NetworkError(String),
     #[default]
@@ -133,6 +145,11 @@ impl ShinDensenClient {
 
     pub fn user_search(&self, cx: &mut Cx, username: String) {
         self.send_request::<String>(cx, &format!("users/{}", username), None, live_id!(UserInfo));
+    }
+
+    pub fn initiate_chat(&self, cx: &mut Cx, target_username: String) {
+        let payload = InitiateChatPayload { target_username };
+        self.send_request(cx, "chats/initiate", Some(payload), live_id!(InitiateChat));
     }
 
     pub fn send_message(&mut self, chat_id: i64, text: String) {
@@ -248,6 +265,16 @@ impl ShinDensenClient {
                             Err(e) => {
                                 cx.action(ShinDensenClientAction::Error(format!(
                                     "Parsing UserInfo: {e:?}"
+                                )));
+                            }
+                        },
+                        live_id!(InitiateChat) => match InitiateChatResponse::deserialize_json(&data) {
+                            Ok(res) => {
+                                cx.action(ShinDensenClientAction::InitiateChat(res));
+                            }
+                            Err(e) => {
+                                cx.action(ShinDensenClientAction::Error(format!(
+                                    "Parsing InitiateChat: {e:?}"
                                 )));
                             }
                         },
