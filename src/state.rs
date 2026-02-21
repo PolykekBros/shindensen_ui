@@ -1,24 +1,5 @@
 use std::collections::HashMap;
-
-use makepad_widgets::{WebSocket, makepad_micro_serde::*};
-
-#[derive(Clone, Debug, Default, DeJson, SerJson)]
-pub struct ChatMessage {
-    pub id: i64,
-    pub chat_id: i64,
-    pub sender_id: i64,
-    pub content: String,
-    pub timestamp: String,
-    pub files: Vec<String>,
-}
-
-#[derive(Clone, Debug, Default, DeJson, SerJson)]
-pub struct ChatInfo {
-    pub id: i64,
-    pub name: Option<String>,
-    pub chat_type: String,
-    pub created_at: String,
-}
+use crate::shindensen_client::{ChatMessage, ChatInfo, ShinDensenClient};
 
 #[derive(Default, Debug)]
 pub enum Screen {
@@ -34,21 +15,19 @@ pub struct State {
     pub chat_info: HashMap<i64, ChatInfo>,
     pub msg_history: HashMap<i64, Vec<ChatMessage>>,
     pub open_chat_id: Option<i64>,
-    pub token: String,
-    pub socket: Option<WebSocket>,
     pub screen: Screen,
+    pub client: ShinDensenClient,
 }
 
 impl State {
-    pub fn new() -> Self {
+    pub fn new(api_url: String, ws_url: String) -> Self {
         State {
             username: String::new(),
             chat_info: HashMap::new(),
             msg_history: HashMap::new(),
             open_chat_id: None,
-            token: String::new(),
-            socket: None,
             screen: Screen::default(),
+            client: ShinDensenClient::new(api_url, ws_url),
         }
     }
 

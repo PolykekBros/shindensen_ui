@@ -1,4 +1,3 @@
-use crate::app::API_URL;
 use crate::makepad_widgets::*;
 use crate::state::*;
 
@@ -33,24 +32,13 @@ struct ChatList {
 }
 
 impl ChatList {
-    pub fn load_msg_history(&mut self, cx: &mut Cx, state: &State) {
-        if state.token.is_empty() {
-            log!("Warning: Attempted to load history without a token.");
-            return;
+    pub fn load_msg_history(&mut self, cx: &mut Cx, state: &mut State) {
+        if let Some(chat_id) = state.open_chat_id {
+            state.client.get_history(cx, chat_id);
+            log!("Requesting message history for chat: {}", chat_id);
+        } else {
+            log!("Warning: Attempted to load history without an open chat.");
         }
-        let chat_id_str = state.open_chat_id.unwrap().to_string();
-        let mut request = HttpRequest::new(
-            format!("{API_URL}/chats/{chat_id_str}/messages"),
-            HttpMethod::GET,
-        );
-        request.set_header("Content-Type".to_string(), "application/json".to_string());
-        request.set_header(
-            "Authorization".to_string(),
-            format!("Bearer {}", state.token),
-        );
-        request.is_streaming = true;
-        log!("Requesting message history for user: {}", state.username);
-        cx.http_request(live_id!(GetHistory), request);
     }
 }
 

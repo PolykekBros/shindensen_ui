@@ -1,4 +1,3 @@
-use crate::app::WS_URL;
 use crate::makepad_widgets::*;
 use crate::state::*;
 
@@ -59,39 +58,11 @@ impl DialogPage {
     pub fn send_message_ws(&mut self, scope: &mut Scope, cx: &mut Cx) {
         let state = scope.data.get_mut::<State>().expect("State not found.");
 
-        if state.token.is_empty() {
-            error!("Cannot send message: No auth token.");
-            return;
-        }
-
         let text = self.text_input(id!(msg)).text();
         self.text_input(id!(msg)).set_text(cx, "");
 
-        if !state.open_chat_id.is_none() {
-            if state.socket.is_none() {
-                let url = format!("{WS_URL}/ws");
-                let mut request = HttpRequest::new(url, HttpMethod::GET);
-                request.set_header(
-                    "Authorization".to_string(),
-                    format!("Bearer {}", state.token),
-                );
-                state.socket = Some(WebSocket::open(request));
-                log!("Opening WebSocket...")
-            }
-
-            if let Some(ws) = &mut state.socket {
-                let payload = format!(
-                    r#"{{"chat_id": {}, "content": "{}", "files": []}}"#,
-                    state.open_chat_id.unwrap(),
-                    text
-                );
-                if let Err(e) = ws.send_string(payload) {
-                    error!("Failed to send WS message: {:?}", e);
-                } else {
-                    log!("Sent WS message: {}", text);
-                }
-            }
-
+        if let Some(chat_id) = state.open_chat_id {
+            state.client.send_message(chat_id, text);
             self.view(id!(news_feed)).redraw(cx);
         } else {
             log!("Error: dialog is not opened!")

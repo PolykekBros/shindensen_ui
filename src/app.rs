@@ -1,4 +1,5 @@
 use crate::state::*;
+use crate::shindensen_client::*;
 use makepad_draw::MatchEvent;
 use makepad_micro_serde::*;
 use makepad_widgets::*;
@@ -46,12 +47,18 @@ live_design! {
     }
 }
 
-#[derive(Live, LiveHook)]
+#[derive(Live)]
 struct App {
     #[live]
     ui: WidgetRef,
     #[rust]
     state: State,
+}
+
+impl LiveHook for App {
+    fn after_new_from_doc(&mut self, _cx: &mut Cx) {
+        self.state = State::new(API_URL.into(), WS_URL.into());
+    }
 }
 
 impl App {
@@ -77,19 +84,7 @@ impl App {
     }
 
     pub fn load_chats(&mut self, cx: &mut Cx) {
-        if self.state.token.is_empty() {
-            log!("Warning: Attempted to load chats without a token.");
-            return;
-        }
-        let mut request = HttpRequest::new(format!("{API_URL}/chats"), HttpMethod::GET);
-        request.set_header("Content-Type".to_string(), "application/json".to_string());
-        request.set_header(
-            "Authorization".to_string(),
-            format!("Bearer {}", self.state.token),
-        );
-        request.is_streaming = true;
-        log!("Requesting chats list for user: {}", self.state.username);
-        cx.http_request(live_id!(GetChats), request);
+        self.state.client.get_chats(cx);
     }
 
     fn new_chat_init(&mut self, cx: &mut Cx) {
@@ -112,83 +107,55 @@ impl LiveRegister for App {
 
 impl MatchEvent for App {
     fn handle_network_responses(&mut self, cx: &mut Cx, responses: &NetworkResponsesEvent) {
-        for event in responses {
-            match &event.response {
-                NetworkResponse::HttpResponse(response) => {
-                    if response.status_code != 200 && response.status_code != 0 {
-                        error!("Server Error: Status {}", response.status_code);
-                        continue;
+        self.state.client.handle_network_responses(cx, responses);
+    }
+
+    fn handle_actions(&mut self, cx: &mut Cx, actions: &Actions) {
+        for action in actions {
+            match action.cast() {
+                ShinDensenClientAction::Authenticated => {
+                    self.load_chats(cx);
+                    log!("Authenticated successfully");
+                }
+                ShinDensenClientAction::NewMessage(msg) => {
+                    self.state.add_message(msg);
+                    self.ui.redraw(cx);
+                }
+                ShinDensenClientAction::Chats(chats) => {
+                    for chat in chats {
+                        self.state.chat_info.insert(chat.id, chat);
+                    }
+                    self.ui.redraw(cx);
+                    log!("Chats loaded: {}", self.state.chat_info.len());
+                }
+                ShinDensenClientAction::History(history) => {
+                    if !history.is_empty() {
+                        let chat_id = history[0].chat_id;
+                        self.state.msg_history.insert(chat_id, history);
+                        self.ui.redraw(cx);
+                        log!("History loaded for chat: {}", chat_id);
                     }
                 }
-                NetworkResponse::HttpStreamResponse(response) => {
-                    if response.status_code != 200 && response.status_code != 0 {
-                        error!("API response: {response:?}");
-                    }
-                    let data = response.get_string_body().unwrap();
-
-                    match event.request_id {
-                        live_id!(AuthRequest) => {
-                            if let Ok(auth_data) = AuthResponse::deserialize_json(&data) {
-                                self.state.token = auth_data.token;
-                                self.load_chats(cx);
-                                log!(
-                                    "Authenticated as: {}, token is: {}",
-                                    self.state.username,
-                                    self.state.token
-                                );
-                            } else {
-                                error!("Failed to parse AuthResponse: {}", data);
-                            }
-                        }
-
-                        live_id!(GetHistory) => match MsgHistory::deserialize_json(&data) {
-                            Ok(history) => {
-                                let chat_id = history[0].chat_id;
-                                self.state.msg_history.insert(chat_id, history);
-                                self.ui.redraw(cx);
-                                log!("Msg_history is imported for chat: {:?}", chat_id);
-                            }
-                            Err(e) => {
-                                error!("Deserialzing msg history response: {e:?}");
-                            }
-                        },
-
-                        live_id!(GetChats) => match ChatsList::deserialize_json(&data) {
-                            Ok(chats) => {
-                                chats.into_iter().for_each(|chat| {
-                                    self.state.chat_info.insert(chat.id, chat);
-                                });
-                                self.ui.redraw(cx);
-                                log!(
-                                    "Chats are imported, number of chats is: {:?}",
-                                    self.state.get_chats_number()
-                                );
-                            }
-                            Err(e) => {
-                                error!("Deserialzing chats response: {e:?}: {data}");
-                            }
-                        },
-
-                        live_id!(UserInfo) => {
-                            if let Ok(user_info) = UserInfoResponse::deserialize_json(&data) {
-                                self.new_chat_init(cx);
-                                log!("Started chat with: {}", user_info.username);
-                            } else {
-                                error!("Failed to parse UserInfoResponse: {}", data);
-                            }
-                        }
-
-                        _ => (),
-                    }
+                ShinDensenClientAction::Token(_) => {
+                    // Token is handled internally by client, but we could store it if needed
                 }
-
-                NetworkResponse::HttpRequestError(err) => {
-                    error!("Network Request Failed: {:?}", err);
+                ShinDensenClientAction::UserInfo(info) => {
+                    self.new_chat_init(cx);
+                    log!("Started chat with: {}", info.username);
                 }
-
-                _ => (),
+                ShinDensenClientAction::Error(e) => {
+                    error!("Client Error: {}", e);
+                }
+                ShinDensenClientAction::NetworkError(e) => {
+                    error!("Network Error: {}", e);
+                }
+                ShinDensenClientAction::None => (),
             }
         }
+    }
+
+    fn handle_signal(&mut self, cx: &mut Cx) {
+        self.state.client.handle_signal(cx);
     }
 }
 
@@ -197,61 +164,13 @@ impl AppMain for App {
         self.match_event(cx, event);
         let mut scope = Scope::with_data(&mut self.state);
         self.ui.handle_event(cx, event, &mut scope);
-        if let Some(mut ws) = self.state.socket.take() {
-            let mut is_closed = false;
-            while let Ok(msg) = ws.try_recv() {
-                log!("received shit from webscocket: {msg:?}");
-                match msg {
-                    WebSocketMessage::String(s) => match ChatMessage::deserialize_json(&s) {
-                        Ok(msg) => {
-                            self.state.add_message(msg);
-                            self.ui.redraw(cx);
-                        }
-                        Err(e) => {
-                            error!("{e:?}");
-                        }
-                    },
-                    WebSocketMessage::Error(e) => error!("WS Error: {}", e),
-                    WebSocketMessage::Closed => {
-                        is_closed = true;
-                        log!("WS Disconnected");
-                    }
-                    _ => (),
-                }
-            }
-            if !is_closed {
-                self.state.socket = Some(ws);
-            }
-        }
         self.apply_visibility(cx);
     }
-}
-
-#[derive(DeJson, Debug)]
-pub struct AuthResponse {
-    pub token: String,
 }
 
 #[derive(DeJson, Debug)]
 pub struct Delta {
     pub content: Option<String>,
 }
-
-#[derive(Clone, Debug, Default, DeJson, SerJson)]
-pub struct MsgHistoryResponse {
-    pub files: Vec<String>,
-}
-
-#[derive(Clone, Debug, Default, DeJson, SerJson)]
-pub struct UserInfoResponse {
-    pub id: i64,
-    pub username: String,
-    pub display_name: Option<String>,
-    pub bio: Option<String>,
-    pub image_id: Option<i64>,
-}
-
-type MsgHistory = Vec<ChatMessage>;
-type ChatsList = Vec<ChatInfo>;
 
 app_main!(App);

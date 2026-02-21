@@ -27,7 +27,16 @@ pub struct AuthResponse {
     pub token: String,
 }
 
-#[derive(Clone, Debug, Default, DeJson, SerJson)]
+#[derive(Clone, Debug, Default, DeJson, SerJson, PartialEq)]
+pub struct UserInfoResponse {
+    pub id: i64,
+    pub username: String,
+    pub display_name: Option<String>,
+    pub bio: Option<String>,
+    pub image_id: Option<i64>,
+}
+
+#[derive(Clone, Debug, Default, DeJson, SerJson, PartialEq)]
 pub struct ChatMessage {
     pub id: i64,
     pub chat_id: i64,
@@ -37,7 +46,7 @@ pub struct ChatMessage {
     pub files: Vec<String>,
 }
 
-#[derive(Clone, Debug, Default, DeJson, SerJson)]
+#[derive(Clone, Debug, Default, DeJson, SerJson, PartialEq)]
 pub struct ChatInfo {
     pub id: i64,
     pub name: Option<String>,
@@ -45,15 +54,30 @@ pub struct ChatInfo {
     pub created_at: String,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub enum ShinDensenClientAction {
     Authenticated,
     NewMessage(ChatMessage),
     Chats(Vec<ChatInfo>),
     History(Vec<ChatMessage>),
     Token(String),
+    UserInfo(UserInfoResponse),
     Error(String),
     NetworkError(String),
+    #[default]
+    None,
+}
+
+impl Default for ShinDensenClient {
+    fn default() -> Self {
+        Self {
+            api_url: String::new(),
+            ws_url: String::new(),
+            stream_chunks: HashMap::new(),
+            socket: None,
+            token: None,
+        }
+    }
 }
 
 impl ShinDensenClient {
@@ -115,6 +139,10 @@ impl ShinDensenClient {
             None,
             live_id!(GetHistory),
         );
+    }
+
+    pub fn user_search(&self, cx: &mut Cx, username: String) {
+        self.send_request::<String>(cx, &format!("users/{}", username), None, live_id!(UserInfo));
     }
 
     pub fn send_message(&mut self, chat_id: i64, text: String) {
@@ -220,6 +248,16 @@ impl ShinDensenClient {
                             Err(e) => {
                                 cx.action(ShinDensenClientAction::Error(format!(
                                     "Parsing GetHistory: {e:?}"
+                                )));
+                            }
+                        },
+                        live_id!(UserInfo) => match UserInfoResponse::deserialize_json(&data) {
+                            Ok(info) => {
+                                cx.action(ShinDensenClientAction::UserInfo(info));
+                            }
+                            Err(e) => {
+                                cx.action(ShinDensenClientAction::Error(format!(
+                                    "Parsing UserInfo: {e:?}"
                                 )));
                             }
                         },

@@ -1,4 +1,4 @@
-use crate::app::API_URL;
+use crate::state::*;
 use makepad_widgets::*;
 
 live_design! {
@@ -36,14 +36,10 @@ struct NewChat {
 }
 
 impl NewChat {
-    fn user_search(&mut self, cx: &mut Cx) {
+    fn user_search(&mut self, cx: &mut Cx, state: &mut State) {
         let user = self.text_input(id!(chat_name)).text();
         if !user.is_empty() {
-            let mut request = HttpRequest::new(format!("{API_URL}/users/{user}"), HttpMethod::GET);
-            request.set_header("Content-Type".to_string(), "application/json".to_string());
-            request.is_streaming = true;
-
-            cx.http_request(live_id!(UserInfo), request);
+            state.client.user_search(cx, user);
         }
     }
 }
@@ -57,14 +53,15 @@ impl Widget for NewChat {
         let actions = cx.capture_actions(|cx| {
             self.view.handle_event(cx, event, scope);
         });
+        let state = scope.data.get_mut::<State>().expect("State not found.");
         let chat_search = self.text_input(id!(chat_name)).text();
         let btn_create = self.button(id!(create));
         if !chat_search.is_empty() {
             if btn_create.clicked(&actions) {
-                self.user_search(cx);
+                self.user_search(cx, state);
             }
             if let Some(_) = self.text_input(id!(chat_name)).returned(&actions) {
-                self.user_search(cx);
+                self.user_search(cx, state);
             }
         }
     }

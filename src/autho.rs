@@ -1,6 +1,4 @@
-use crate::app::API_URL;
 use crate::state::*;
-use makepad_micro_serde::*;
 use makepad_widgets::*;
 
 live_design! {
@@ -37,11 +35,6 @@ struct LoginForm {
     view: View,
 }
 
-#[derive(SerJson, Debug)]
-pub struct AuthRequestPayload {
-    pub username: String,
-}
-
 impl LoginForm {
     fn set_user(&mut self, cx: &mut Cx, scope: &mut Scope) {
         let state = scope.data.get_mut::<State>().expect("State not found.");
@@ -51,20 +44,8 @@ impl LoginForm {
             self.text_input(id!(nickname)).set_text(cx, "");
             log!("Nickname now is: {}", nick);
             state.username = nick.clone();
-            self.authenticate(cx, nick);
+            state.client.authorize(cx, nick);
         }
-    }
-
-    pub fn authenticate(&mut self, cx: &mut Cx, user: String) {
-        let payload = AuthRequestPayload { username: user };
-
-        let mut request = HttpRequest::new(format!("{API_URL}/login"), HttpMethod::POST);
-        request.set_header("Content-Type".to_string(), "application/json".to_string());
-        request.set_body(payload.serialize_json().as_bytes().to_vec());
-        request.is_streaming = true;
-        log!("{:?}", request);
-
-        cx.http_request(live_id!(AuthRequest), request);
     }
 }
 
