@@ -57,12 +57,11 @@ struct DialogPage {
 impl DialogPage {
     pub fn send_message_ws(&mut self, scope: &mut Scope, cx: &mut Cx) {
         let state = scope.data.get_mut::<State>().expect("State not found.");
-
         let text = self.text_input(id!(msg)).text();
         self.text_input(id!(msg)).set_text(cx, "");
-
         if let Some(chat_id) = state.open_chat_id {
-            state.client.send_message(chat_id, text);
+            log!("Sending message to chat_id: {}", chat_id);
+            state.client.send_message(cx, chat_id, text);
             self.view(id!(news_feed)).redraw(cx);
         } else {
             log!("Error: dialog is not opened!")
@@ -75,10 +74,8 @@ impl Widget for DialogPage {
         let actions = cx.capture_actions(|cx| {
             self.layout.handle_event(cx, event, scope);
         });
-
-        if self.button(id!(send)).clicked(&actions)
-            || self.text_input(id!(msg)).returned(&actions).is_some()
-        {
+        let send_btn = self.button(id!(send));
+        if send_btn.clicked(&actions) || self.text_input(id!(msg)).returned(&actions).is_some() {
             let text = self.text_input(id!(msg)).text();
             if !text.is_empty() {
                 self.send_message_ws(scope, cx);
@@ -118,8 +115,9 @@ impl Widget for NewsFeed {
                         } else {
                             msg.sender_id.to_string()
                         };
-                        item.label(id!(username.text)).set_text(cx, &sender_name);
-                        item.label(id!(content.text))
+                        item.label(id!(user_msg.username.text))
+                            .set_text(cx, &sender_name);
+                        item.label(id!(user_msg.content.text))
                             .set_text(cx, msg.content.as_deref().unwrap_or(""));
                     }
                     item.draw_all(cx, &mut Scope::empty());

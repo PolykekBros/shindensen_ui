@@ -172,7 +172,12 @@ impl ShinDensenClient {
     }
 
     pub fn user_get_by_id(&self, cx: &mut Cx, user_id: i64) {
-        self.send_request::<String>(cx, &format!("users/{}", user_id), None, live_id!(GetUserInfo));
+        self.send_request::<String>(
+            cx,
+            &format!("users/{}", user_id),
+            None,
+            live_id!(GetUserInfo),
+        );
     }
 
     pub fn initiate_chat(&self, cx: &mut Cx, target_username: String) {
@@ -180,14 +185,23 @@ impl ShinDensenClient {
         self.send_request(cx, "chats/initiate", Some(payload), live_id!(InitiateChat));
     }
 
-    pub fn send_message(&mut self, chat_id: i64, text: String) {
-        if let Some(socket) = &mut self.socket {
-            let payload = ChatMessagePayload {
-                chat_id,
-                content: Some(text),
-                files: None,
-            };
-            let _ = socket.send_string(payload.serialize_json());
+    pub fn send_message(&mut self, cx: &mut Cx, chat_id: i64, text: String) {
+        match &mut self.socket {
+            Some(socket) => {
+                let payload = ChatMessagePayload {
+                    chat_id,
+                    content: Some(text),
+                    files: Some(vec![]),
+                };
+                if let Err(e) = socket.send_string(payload.serialize_json()) {
+                    cx.action(ShinDensenClientAction::NetworkError(format!(
+                        "WebSocket send error: {e:?}"
+                    )));
+                }
+            }
+            None => cx.action(ShinDensenClientAction::Error(
+                "Socket is NOT open, cannot send message!".to_string(),
+            )),
         }
     }
 
@@ -195,8 +209,13 @@ impl ShinDensenClient {
         if let Some(socket) = &mut self.socket {
             while let Ok(msg) = socket.try_recv() {
                 match msg {
+                    WebSocketMessage::Opened => {
+                        log!("WebSocket connection opened successfully");
+                    }
                     WebSocketMessage::String(data) => match ChatMessage::deserialize_json(&data) {
-                        Ok(msg) => cx.action(ShinDensenClientAction::NewMessage(msg)),
+                        Ok(msg) => {
+                            cx.action(ShinDensenClientAction::NewMessage(msg));
+                        }
                         Err(e) => cx.action(ShinDensenClientAction::Error(format!(
                             "Parsing WebSocketMessage: {e:?}"
                         ))),
@@ -239,8 +258,10 @@ impl ShinDensenClient {
         }
     }
 
-    fn handle_response(&mut self, cx: &mut Cx, request_id: LiveId, status: u16, data: String) {
-        if request_id == live_id!(UserInfo) && status == 404 {
+    pub fn handle_response(&mut self, cx: &mut Cx, request_id: LiveId, status: u16, data: String) {
+        if (request_id == live_id!(UserInfo) || request_id == live_id!(GetUserInfo))
+            && status == 404
+        {
             cx.action(ShinDensenClientAction::UserNotFound);
             return;
         }
