@@ -102,25 +102,30 @@ impl Widget for NewsFeed {
                 let msg_count = state.get_message_number();
                 list.set_item_range(cx, 0, msg_count);
                 while let Some(item_id) = list.next_visible_item(cx) {
-                    let template = live_id!(post);
-                    let item = list.item(cx, item_id, template);
-                    if let Some(chat_id) = state.open_chat_id
-                        && let Some(messages) = state.msg_history.get(&chat_id)
-                        && let Some(msg) = messages.get(item_id)
-                    {
-                        let sender_name = if let Some(user) = state.user_info.get(&msg.sender_id) {
-                            user.display_name
-                                .clone()
-                                .unwrap_or_else(|| user.username.clone())
-                        } else {
-                            msg.sender_id.to_string()
-                        };
-                        item.label(id!(user_msg.username.text))
-                            .set_text(cx, &sender_name);
-                        item.label(id!(user_msg.content.text))
-                            .set_text(cx, msg.content.as_deref().unwrap_or(""));
+                    if item_id >= msg_count {
+                        continue;
+                    } else {
+                        let template = live_id!(post);
+                        let item = list.item(cx, item_id, template);
+                        if let Some(chat_id) = state.open_chat_id
+                            && let Some(messages) = state.msg_history.get(&chat_id)
+                            && let Some(msg) = messages.get(item_id)
+                        {
+                            let sender_name =
+                                if let Some(user) = state.user_info.get(&msg.sender_id) {
+                                    user.display_name
+                                        .clone()
+                                        .unwrap_or_else(|| user.username.clone())
+                                } else {
+                                    msg.sender_id.to_string()
+                                };
+                            item.label(id!(user_msg.username.text))
+                                .set_text(cx, &sender_name);
+                            item.label(id!(user_msg.content.text))
+                                .set_text(cx, msg.content.as_deref().unwrap_or(""));
+                        }
+                        item.draw_all(cx, &mut Scope::empty());
                     }
-                    item.draw_all(cx, &mut Scope::empty());
                 }
             }
         }

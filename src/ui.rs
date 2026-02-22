@@ -153,13 +153,19 @@ live_design! {
     pub AlertField = <RoundedView> {
         width: Fit
         height: Fit
-        visible: true,
+        visible: false,
+        padding: { top: 5.0, right: 10.0, bottom: 5.0, left: 10.0 }
+        margin: { top: 5.0 }
         draw_bg: {
             color: #FF2400
             border_size: 1.5
             border_color: #2d2c40
         }
-        alert_text = <TextLabel> { }
+        alert_text = <TextLabel> {
+            padding: { top: 0.0, right: 0.0, bottom: 0.0, left: 0.0 }
+            margin: { top: 0.0, right: 0.0, bottom: 0.0, left: 0.0 }
+            draw_text: { text_style: { font_size: 12 } }
+        }
     }
 
     pub Post = <View> {

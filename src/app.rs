@@ -147,8 +147,12 @@ impl MatchEvent for App {
                         }
                     }
                     self.state.msg_history.insert(res.chat_id, res.messages);
-                    self.ui.redraw(cx);
-                    log!("History loaded for chat: {}", res.chat_id);
+                    log!(
+                        "History loaded for chat: {}: {} messages",
+                        res.chat_id,
+                        self.state.msg_history[&res.chat_id].len()
+                    );
+                    cx.redraw_all();
                 }
                 ShinDensenClientAction::Token(_) => {
                     // Token is handled internally by client, but we could store it if needed
@@ -157,9 +161,14 @@ impl MatchEvent for App {
                     if let Some(info) = users.first() {
                         self.state.user_info.insert(info.id, info.clone());
                         self.state.client.initiate_chat(cx, info.id);
+                        self.ui
+                            .widget(id!(new_chat.error_label))
+                            .set_visible(cx, false);
                         log!("User found: {}, initiating chat...", info.username);
                     } else {
-                        cx.action(ShinDensenClientAction::UserNotFound);
+                        self.ui
+                            .widget(id!(new_chat.error_label))
+                            .set_visible(cx, true);
                     }
                 }
                 ShinDensenClientAction::UserInfo(info) => {

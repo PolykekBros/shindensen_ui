@@ -48,27 +48,34 @@ impl Widget for ChatList {
             if let Some(mut list) = item.as_portal_list().borrow_mut() {
                 let state = scope.data.get::<State>().expect("State not found.");
                 let chat_ids: Vec<i64> = state.chat_info.keys().copied().collect();
-                list.set_item_range(cx, 0, chat_ids.len());
+                let chat_count = chat_ids.len();
+                list.set_item_range(cx, 0, chat_count);
                 while let Some(item_id) = list.next_visible_item(cx) {
-                    let template = live_id!(chat);
-                    let item = list.item(cx, item_id, template);
-                    if let Some(chat_id) = chat_ids.get(item_id) {
-                        let chat_name = if let Some(info) = state.chat_info.get(chat_id) {
-                            info.name.clone().unwrap_or_else(|| chat_id.to_string())
-                        } else {
-                            chat_id.to_string()
-                        };
-                        item.label(id!(user_chat.target_usr.text))
-                            .set_text(cx, &chat_name);
+                    if item_id >= chat_count {
+                        continue;
+                    } else {
+                        let template = live_id!(chat);
+                        let item = list.item(cx, item_id, template);
+                        if let Some(chat_id) = chat_ids.get(item_id) {
+                            let chat_name = if let Some(info) = state.chat_info.get(chat_id) {
+                                info.name.clone().unwrap_or_else(|| chat_id.to_string())
+                            } else {
+                                chat_id.to_string()
+                            };
+                            item.label(id!(user_chat.target_usr.text))
+                                .set_text(cx, &chat_name);
 
-                        if let Some(msgs) = state.msg_history.get(chat_id) {
-                            if let Some(last_msg) = msgs.last() {
-                                item.label(id!(user_chat.last_msg.text))
-                                    .set_text(cx, last_msg.content.as_deref().unwrap_or(""));
+                            if let Some(msgs) = state.msg_history.get(chat_id) {
+                                if let Some(last_msg) = msgs.last() {
+                                    item.label(id!(user_chat.last_msg.text))
+                                        .set_text(cx, last_msg.content.as_deref().unwrap_or(""));
+                                } else {
+                                    item.label(id!(user_chat.last_msg.text)).set_text(cx, "");
+                                }
                             }
                         }
+                        item.draw_all(cx, &mut Scope::empty());
                     }
-                    item.draw_all(cx, &mut Scope::empty());
                 }
             }
         }
@@ -89,12 +96,11 @@ impl Widget for ChatList {
                     && body_view.area().rect(cx).contains(fe.abs)
                 {
                     let state = scope.data.get_mut::<State>().expect("State not found.");
-                    let chat_ids: Vec<i64> = state.chat_info.keys().copied().collect();
+                    let chat_ids = state.chat_info.keys().copied().collect::<Vec<_>>();
                     if let Some(selected_id) = chat_ids.get(item_id) {
                         state.open_chat_id = Some(*selected_id);
                         self.load_msg_history(cx, state);
                         log!("Opened chat: {}", *selected_id);
-                        cx.redraw_all();
                     }
                 }
             }

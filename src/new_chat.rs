@@ -22,10 +22,19 @@ live_design! {
         chat_name = <InputField> {
             empty_text: "New chat name"
         }
-        error_label = <AlertField> { alert_text = { text: "User not found!" }}
-        create = <Buttons> {
-            text: "Create"
+        <View> {
+            width: Fill, height: Fit
+            align: { x: 0.5, y: 0.0 }
+            spacing: 10.0
+            flow: Right
+            back = <Buttons> {
+                text: "Return"
+            }
+            create = <Buttons> {
+                text: "Create"
+            }
         }
+        error_label = <AlertField> { alert_text = { text: "User not found!" }}
     }
 }
 
@@ -56,6 +65,7 @@ impl Widget for NewChat {
         let state = scope.data.get_mut::<State>().expect("State not found.");
         let chat_search = self.text_input(id!(chat_name)).text();
         let btn_create = self.button(id!(create));
+        let btn_back = self.button(id!(back));
         if !chat_search.is_empty() {
             if btn_create.clicked(&actions) {
                 self.user_search(cx, state);
@@ -64,5 +74,14 @@ impl Widget for NewChat {
                 self.user_search(cx, state);
             }
         }
+
+        if btn_back.clicked(&actions) {
+            state.screen = Screen::Dialog;
+            self.text_input(id!(chat_name)).set_text(cx, "");
+            self.widget(id!(error_label)).set_visible(cx, false);
+        }
+        // if self.text_input(id!(chat_name)).returned(&actions).is_some() {
+        //     self.user_search(cx, state);
+        // } TODO: Make go back on esc button click
     }
 }
