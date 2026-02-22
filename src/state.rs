@@ -1,4 +1,4 @@
-use crate::shindensen_client::{ChatInfo, ChatMessage, ShinDensenClient};
+use crate::shindensen_client::{ChatInfo, ChatMessage, ShinDensenClient, UserInfoResponse};
 use std::collections::HashMap;
 
 #[derive(Default, Debug)]
@@ -14,6 +14,8 @@ pub struct State {
     pub username: String,
     pub chat_info: HashMap<i64, ChatInfo>,
     pub msg_history: HashMap<i64, Vec<ChatMessage>>,
+    pub user_info: HashMap<i64, UserInfoResponse>,
+    pub pending_user_fetches: std::collections::HashSet<i64>,
     pub open_chat_id: Option<i64>,
     pub screen: Screen,
     pub client: ShinDensenClient,
@@ -25,6 +27,8 @@ impl State {
             username: String::new(),
             chat_info: HashMap::new(),
             msg_history: HashMap::new(),
+            user_info: HashMap::new(),
+            pending_user_fetches: std::collections::HashSet::new(),
             open_chat_id: None,
             screen: Screen::default(),
             client: ShinDensenClient::new(api_url, ws_url),

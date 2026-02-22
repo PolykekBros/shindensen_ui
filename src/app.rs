@@ -119,7 +119,14 @@ impl MatchEvent for App {
                     log!("Authenticated successfully");
                 }
                 ShinDensenClientAction::NewMessage(msg) => {
+                    let sender_id = msg.sender_id;
                     self.state.add_message(msg);
+                    if !self.state.user_info.contains_key(&sender_id)
+                        && !self.state.pending_user_fetches.contains(&sender_id)
+                    {
+                        self.state.pending_user_fetches.insert(sender_id);
+                        self.state.client.user_get_by_id(cx, sender_id);
+                    }
                     self.ui.redraw(cx);
                 }
                 ShinDensenClientAction::Chats(chats) => {
@@ -130,6 +137,15 @@ impl MatchEvent for App {
                     log!("Chats loaded: {}", self.state.chat_info.len());
                 }
                 ShinDensenClientAction::History(res) => {
+                    for msg in &res.messages {
+                        let sender_id = msg.sender_id;
+                        if !self.state.user_info.contains_key(&sender_id)
+                            && !self.state.pending_user_fetches.contains(&sender_id)
+                        {
+                            self.state.pending_user_fetches.insert(sender_id);
+                            self.state.client.user_get_by_id(cx, sender_id);
+                        }
+                    }
                     self.state.msg_history.insert(res.chat_id, res.messages);
                     self.ui.redraw(cx);
                     log!("History loaded for chat: {}", res.chat_id);
@@ -137,9 +153,15 @@ impl MatchEvent for App {
                 ShinDensenClientAction::Token(_) => {
                     // Token is handled internally by client, but we could store it if needed
                 }
-                ShinDensenClientAction::UserInfo(info) => {
+                ShinDensenClientAction::UserSearchResponse(info) => {
+                    self.state.user_info.insert(info.id, info.clone());
                     self.state.client.initiate_chat(cx, info.username.clone());
                     log!("User found: {}, initiating chat...", info.username);
+                }
+                ShinDensenClientAction::UserInfo(info) => {
+                    self.state.pending_user_fetches.remove(&info.id);
+                    self.state.user_info.insert(info.id, info);
+                    self.ui.redraw(cx);
                 }
                 ShinDensenClientAction::UserNotFound => {
                     error!("User not found");
@@ -147,6 +169,7 @@ impl MatchEvent for App {
                 ShinDensenClientAction::InitiateChat(res) => {
                     self.state.open_chat_id = Some(res.chat_id);
                     self.state.client.get_history(cx, res.chat_id);
+                    self.state.client.get_chats(cx);
                     self.new_chat_init(cx);
                     log!(
                         "Chat initiated/found: id {}, status: {}",

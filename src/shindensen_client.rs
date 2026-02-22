@@ -98,6 +98,7 @@ pub enum ShinDensenClientAction {
     Chats(Vec<ChatInfo>),
     History(GetHistoryResponse),
     Token(String),
+    UserSearchResponse(UserInfoResponse),
     UserInfo(UserInfoResponse),
     UserNotFound,
     InitiateChat(InitiateChatResponse),
@@ -168,6 +169,10 @@ impl ShinDensenClient {
 
     pub fn user_search(&self, cx: &mut Cx, username: String) {
         self.send_request::<String>(cx, &format!("users/{}", username), None, live_id!(UserInfo));
+    }
+
+    pub fn user_get_by_id(&self, cx: &mut Cx, user_id: i64) {
+        self.send_request::<String>(cx, &format!("users/{}", user_id), None, live_id!(GetUserInfo));
     }
 
     pub fn initiate_chat(&self, cx: &mut Cx, target_username: String) {
@@ -283,11 +288,21 @@ impl ShinDensenClient {
             },
             live_id!(UserInfo) => match UserInfoResponse::deserialize_json(&data) {
                 Ok(info) => {
-                    cx.action(ShinDensenClientAction::UserInfo(info));
+                    cx.action(ShinDensenClientAction::UserSearchResponse(info));
                 }
                 Err(e) => {
                     cx.action(ShinDensenClientAction::Error(format!(
                         "Parsing UserInfo: {e:?}"
+                    )));
+                }
+            },
+            live_id!(GetUserInfo) => match UserInfoResponse::deserialize_json(&data) {
+                Ok(info) => {
+                    cx.action(ShinDensenClientAction::UserInfo(info));
+                }
+                Err(e) => {
+                    cx.action(ShinDensenClientAction::Error(format!(
+                        "Parsing GetUserInfo: {e:?}"
                     )));
                 }
             },

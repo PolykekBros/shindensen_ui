@@ -53,15 +53,18 @@ impl Widget for ChatList {
                     let template = live_id!(chat);
                     let item = list.item(cx, item_id, template);
                     if let Some(chat_id) = chat_ids.get(item_id) {
-                        item.label(id!(target_usr.text))
-                            .set_text(cx, &chat_id.to_string());
+                        let chat_name = if let Some(info) = state.chat_info.get(chat_id) {
+                            info.name.clone().unwrap_or_else(|| chat_id.to_string())
+                        } else {
+                            chat_id.to_string()
+                        };
+                        item.label(id!(target_usr.text)).set_text(cx, &chat_name);
+
                         if let Some(msgs) = state.msg_history.get(chat_id) {
                             if let Some(last_msg) = msgs.last() {
                                 item.label(id!(last_msg.text))
                                     .set_text(cx, last_msg.content.as_deref().unwrap_or(""));
                             }
-                            item.label(id!(target_usr.text))
-                                .set_text(cx, &chat_id.to_string());
                         }
                     }
                     item.draw_all(cx, &mut Scope::empty());

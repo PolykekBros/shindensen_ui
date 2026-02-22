@@ -111,8 +111,14 @@ impl Widget for NewsFeed {
                         && let Some(messages) = state.msg_history.get(&chat_id)
                         && let Some(msg) = messages.get(item_id)
                     {
-                        item.label(id!(username.text))
-                            .set_text(cx, &msg.sender_id.to_string());
+                        let sender_name = if let Some(user) = state.user_info.get(&msg.sender_id) {
+                            user.display_name
+                                .clone()
+                                .unwrap_or_else(|| user.username.clone())
+                        } else {
+                            msg.sender_id.to_string()
+                        };
+                        item.label(id!(username.text)).set_text(cx, &sender_name);
                         item.label(id!(content.text))
                             .set_text(cx, msg.content.as_deref().unwrap_or(""));
                     }
