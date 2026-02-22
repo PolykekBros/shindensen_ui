@@ -67,22 +67,52 @@ impl State {
     }
 
     pub fn get_chat_name(&self, chat_id: i64) -> String {
-        if let Some(chat) = self.chat_info.get(&chat_id) {
-            if let Some(name) = &chat.name {
+        let chat = match self.chat_info.get(&chat_id) {
+            Some(c) => c,
+            None => {
+                return chat_id.to_string();
+            }
+        };
+
+        if let Some(name) = &chat.name {
+            if !name.is_empty() {
                 return name.clone();
             }
-            if chat.chat_type == "direct" {
-                if let Some(my_id) = self.current_user_id {
-                    let other_id = chat.participants.iter().find(|&&id| id != my_id);
-                    if let Some(&other_id) = other_id {
-                        if let Some(user) = self.user_info.get(&other_id) {
-                            return user.display_name.clone().unwrap_or_else(|| user.username.clone());
-                        }
-                        return format!("User {}", other_id);
-                    }
+        }
+
+        let mut other_participants = Vec::new();
+        for &p_id in &chat.participants {
+            if let Some(my_id) = self.current_user_id {
+                if p_id == my_id {
+                    continue;
                 }
             }
+            if let Some(user) = self.user_info.get(&p_id) {
+                other_participants.push(user.display_name.clone().unwrap_or_else(|| user.username.clone()));
+            } else {
+                other_participants.push(format!("U{}", p_id));
+            }
         }
-        chat_id.to_string()
+
+        if other_participants.is_empty() {
+            if let Some(my_id) = self.current_user_id {
+                if chat.participants.contains(&my_id) {
+                    return "Saved Messages".to_string();
+                }
+            }
+            return chat_id.to_string();
+        }
+
+        if chat.chat_type == "direct" {
+            return other_participants[0].clone();
+        }
+
+        // For groups without name, show first 3 participants
+        let count = other_participants.len();
+        if count > 3 {
+             format!("{}, {}, {}...", other_participants[0], other_participants[1], other_participants[2])
+        } else {
+             other_participants.join(", ")
+        }
     }
 }

@@ -130,7 +130,9 @@ impl MatchEvent for App {
                         for &p_id in &chat.participants {
                             self.state.fetch_user(cx, p_id);
                         }
-                        self.state.chat_info.insert(chat.id, chat);
+                        let chat_id = chat.id;
+                        self.state.chat_info.insert(chat_id, chat);
+                        self.state.client.get_history(cx, chat_id);
                     }
                     self.ui.redraw(cx);
                     log!("Chats loaded: {}", self.state.chat_info.len());
