@@ -1,12 +1,12 @@
 #![allow(clippy::question_mark)]
-use crate::state::*;
 use crate::shindensen_client::*;
+use crate::state::*;
 use makepad_draw::MatchEvent;
 use makepad_micro_serde::*;
 use makepad_widgets::*;
 
-pub const API_URL: &str = "http://localhost:3000";
-pub const WS_URL: &str = "ws://localhost:3000";
+pub const API_URL: &str = "http://127.0.0.1:3000";
+pub const WS_URL: &str = "ws://127.0.0.1:3000/ws";
 
 live_design! {
     use link::theme::*;
@@ -129,13 +129,10 @@ impl MatchEvent for App {
                     self.ui.redraw(cx);
                     log!("Chats loaded: {}", self.state.chat_info.len());
                 }
-                ShinDensenClientAction::History(history) => {
-                    if !history.is_empty() {
-                        let chat_id = history[0].chat_id;
-                        self.state.msg_history.insert(chat_id, history);
-                        self.ui.redraw(cx);
-                        log!("History loaded for chat: {}", chat_id);
-                    }
+                ShinDensenClientAction::History(res) => {
+                    self.state.msg_history.insert(res.chat_id, res.messages);
+                    self.ui.redraw(cx);
+                    log!("History loaded for chat: {}", res.chat_id);
                 }
                 ShinDensenClientAction::Token(_) => {
                     // Token is handled internally by client, but we could store it if needed
@@ -144,11 +141,18 @@ impl MatchEvent for App {
                     self.state.client.initiate_chat(cx, info.username.clone());
                     log!("User found: {}, initiating chat...", info.username);
                 }
+                ShinDensenClientAction::UserNotFound => {
+                    error!("User not found");
+                }
                 ShinDensenClientAction::InitiateChat(res) => {
                     self.state.open_chat_id = Some(res.chat_id);
-                    self.load_chats(cx);
+                    self.state.client.get_history(cx, res.chat_id);
                     self.new_chat_init(cx);
-                    log!("Chat initiated/found: id {}, status: {}", res.chat_id, res.status);
+                    log!(
+                        "Chat initiated/found: id {}, status: {}",
+                        res.chat_id,
+                        res.status
+                    );
                 }
                 ShinDensenClientAction::Error(e) => {
                     error!("Client Error: {}", e);

@@ -1,5 +1,5 @@
+use crate::shindensen_client::{ChatInfo, ChatMessage, ShinDensenClient};
 use std::collections::HashMap;
-use crate::shindensen_client::{ChatMessage, ChatInfo, ShinDensenClient};
 
 #[derive(Default, Debug)]
 pub enum Screen {

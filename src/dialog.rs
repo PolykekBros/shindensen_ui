@@ -107,17 +107,14 @@ impl Widget for NewsFeed {
                 while let Some(item_id) = list.next_visible_item(cx) {
                     let template = live_id!(post);
                     let item = list.item(cx, item_id, template);
-                    if let Some(chat_id) = state.open_chat_id {
-                        match state.msg_history.get(&chat_id) {
-                            Some(messages) => {
-                                if let Some(msg) = messages.get(item_id) {
-                                    item.label(id!(username.text))
-                                        .set_text(cx, &msg.sender_id.to_string());
-                                    item.label(id!(content.text)).set_text(cx, &msg.content);
-                                }
-                            }
-                            None => log!("Chat is empty!"),
-                        }
+                    if let Some(chat_id) = state.open_chat_id
+                        && let Some(messages) = state.msg_history.get(&chat_id)
+                        && let Some(msg) = messages.get(item_id)
+                    {
+                        item.label(id!(username.text))
+                            .set_text(cx, &msg.sender_id.to_string());
+                        item.label(id!(content.text))
+                            .set_text(cx, msg.content.as_deref().unwrap_or(""));
                     }
                     item.draw_all(cx, &mut Scope::empty());
                 }
