@@ -153,10 +153,14 @@ impl MatchEvent for App {
                 ShinDensenClientAction::Token(_) => {
                     // Token is handled internally by client, but we could store it if needed
                 }
-                ShinDensenClientAction::UserSearchResponse(info) => {
-                    self.state.user_info.insert(info.id, info.clone());
-                    self.state.client.initiate_chat(cx, info.username.clone());
-                    log!("User found: {}, initiating chat...", info.username);
+                ShinDensenClientAction::UserSearchResponse(users) => {
+                    if let Some(info) = users.first() {
+                        self.state.user_info.insert(info.id, info.clone());
+                        self.state.client.initiate_chat(cx, info.id);
+                        log!("User found: {}, initiating chat...", info.username);
+                    } else {
+                        cx.action(ShinDensenClientAction::UserNotFound);
+                    }
                 }
                 ShinDensenClientAction::UserInfo(info) => {
                     self.state.pending_user_fetches.remove(&info.id);

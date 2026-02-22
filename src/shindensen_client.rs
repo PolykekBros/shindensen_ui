@@ -33,7 +33,7 @@ pub struct ChatMessagePayload {
 
 #[derive(SerJson, Debug)]
 pub struct InitiateChatPayload {
-    pub target_username: String,
+    pub target_id: i64,
 }
 
 #[derive(DeJson, Debug)]
@@ -98,7 +98,7 @@ pub enum ShinDensenClientAction {
     Chats(Vec<ChatInfo>),
     History(GetHistoryResponse),
     Token(String),
-    UserSearchResponse(UserInfoResponse),
+    UserSearchResponse(Vec<UserInfoResponse>),
     UserInfo(UserInfoResponse),
     UserNotFound,
     InitiateChat(InitiateChatResponse),
@@ -168,7 +168,12 @@ impl ShinDensenClient {
     }
 
     pub fn user_search(&self, cx: &mut Cx, username: String) {
-        self.send_request::<String>(cx, &format!("users/{}", username), None, live_id!(UserInfo));
+        self.send_request::<String>(
+            cx,
+            &format!("users?username={}", username),
+            None,
+            live_id!(UserInfo),
+        );
     }
 
     pub fn user_get_by_id(&self, cx: &mut Cx, user_id: i64) {
@@ -180,8 +185,8 @@ impl ShinDensenClient {
         );
     }
 
-    pub fn initiate_chat(&self, cx: &mut Cx, target_username: String) {
-        let payload = InitiateChatPayload { target_username };
+    pub fn initiate_chat(&self, cx: &mut Cx, target_id: i64) {
+        let payload = InitiateChatPayload { target_id };
         self.send_request(cx, "chats/initiate", Some(payload), live_id!(InitiateChat));
     }
 
@@ -259,9 +264,7 @@ impl ShinDensenClient {
     }
 
     pub fn handle_response(&mut self, cx: &mut Cx, request_id: LiveId, status: u16, data: String) {
-        if (request_id == live_id!(UserInfo) || request_id == live_id!(GetUserInfo))
-            && status == 404
-        {
+        if request_id == live_id!(GetUserInfo) && status == 404 {
             cx.action(ShinDensenClientAction::UserNotFound);
             return;
         }
@@ -307,7 +310,7 @@ impl ShinDensenClient {
                     )));
                 }
             },
-            live_id!(UserInfo) => match UserInfoResponse::deserialize_json(&data) {
+            live_id!(UserInfo) => match Vec::<UserInfoResponse>::deserialize_json(&data) {
                 Ok(info) => {
                     cx.action(ShinDensenClientAction::UserSearchResponse(info));
                 }
