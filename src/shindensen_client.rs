@@ -89,6 +89,7 @@ pub struct ChatInfo {
     pub name: Option<String>,
     pub chat_type: String,
     pub created_at: String,
+    pub participants: Vec<i64>,
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]

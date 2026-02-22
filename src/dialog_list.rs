@@ -57,11 +57,7 @@ impl Widget for ChatList {
                         let template = live_id!(chat);
                         let item = list.item(cx, item_id, template);
                         if let Some(chat_id) = chat_ids.get(item_id) {
-                            let chat_name = if let Some(info) = state.chat_info.get(chat_id) {
-                                info.name.clone().unwrap_or_else(|| chat_id.to_string())
-                            } else {
-                                chat_id.to_string()
-                            };
+                            let chat_name = state.get_chat_name(*chat_id);
                             item.label(id!(user_chat.target_usr.text))
                                 .set_text(cx, &chat_name);
 

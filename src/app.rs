@@ -115,22 +115,21 @@ impl MatchEvent for App {
         for action in actions {
             match action.cast() {
                 ShinDensenClientAction::Authenticated => {
+                    self.state.client.user_search(cx, self.state.username.clone());
                     self.load_chats(cx);
                     log!("Authenticated successfully");
                 }
                 ShinDensenClientAction::NewMessage(msg) => {
                     let sender_id = msg.sender_id;
                     self.state.add_message(msg);
-                    if !self.state.user_info.contains_key(&sender_id)
-                        && !self.state.pending_user_fetches.contains(&sender_id)
-                    {
-                        self.state.pending_user_fetches.insert(sender_id);
-                        self.state.client.user_get_by_id(cx, sender_id);
-                    }
+                    self.state.fetch_user(cx, sender_id);
                     self.ui.redraw(cx);
                 }
                 ShinDensenClientAction::Chats(chats) => {
                     for chat in chats {
+                        for &p_id in &chat.participants {
+                            self.state.fetch_user(cx, p_id);
+                        }
                         self.state.chat_info.insert(chat.id, chat);
                     }
                     self.ui.redraw(cx);
@@ -138,13 +137,7 @@ impl MatchEvent for App {
                 }
                 ShinDensenClientAction::History(res) => {
                     for msg in &res.messages {
-                        let sender_id = msg.sender_id;
-                        if !self.state.user_info.contains_key(&sender_id)
-                            && !self.state.pending_user_fetches.contains(&sender_id)
-                        {
-                            self.state.pending_user_fetches.insert(sender_id);
-                            self.state.client.user_get_by_id(cx, sender_id);
-                        }
+                        self.state.fetch_user(cx, msg.sender_id);
                     }
                     self.state.msg_history.insert(res.chat_id, res.messages);
                     log!(
@@ -158,18 +151,28 @@ impl MatchEvent for App {
                     // Token is handled internally by client, but we could store it if needed
                 }
                 ShinDensenClientAction::UserSearchResponse(users) => {
+                    if let Some(info) = users.iter().find(|u| u.username == self.state.username) {
+                        self.state.current_user_id = Some(info.id);
+                        self.state.user_info.insert(info.id, info.clone());
+                        log!("Current user ID identified: {}", info.id);
+                    }
+
                     if let Some(info) = users.first() {
                         self.state.user_info.insert(info.id, info.clone());
-                        self.state.client.initiate_chat(cx, info.id);
-                        self.ui
-                            .widget(id!(new_chat.error_label))
-                            .set_visible(cx, false);
-                        log!("User found: {}, initiating chat...", info.username);
-                    } else {
+                        // If we were initiating a chat (from new_chat screen)
+                        if self.state.screen == Screen::NewChatInit {
+                            self.state.client.initiate_chat(cx, info.id);
+                            self.ui
+                                .widget(id!(new_chat.error_label))
+                                .set_visible(cx, false);
+                            log!("User found: {}, initiating chat...", info.username);
+                        }
+                    } else if self.state.screen == Screen::NewChatInit {
                         self.ui
                             .widget(id!(new_chat.error_label))
                             .set_visible(cx, true);
                     }
+                    self.ui.redraw(cx);
                 }
                 ShinDensenClientAction::UserInfo(info) => {
                     self.state.pending_user_fetches.remove(&info.id);
