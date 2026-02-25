@@ -1,6 +1,6 @@
 use crate::shindensen_client::{ChatInfo, ChatMessage, ShinDensenClient, UserInfoResponse};
-use std::collections::HashMap;
 use makepad_widgets::Cx;
+use std::collections::HashMap;
 
 #[derive(Default, Debug, PartialEq, Clone)]
 pub enum Screen {
@@ -88,7 +88,11 @@ impl State {
                 }
             }
             if let Some(user) = self.user_info.get(&p_id) {
-                other_participants.push(user.display_name.clone().unwrap_or_else(|| user.username.clone()));
+                other_participants.push(
+                    user.display_name
+                        .clone()
+                        .unwrap_or_else(|| user.username.clone()),
+                );
             } else {
                 other_participants.push(format!("U{}", p_id));
             }
@@ -110,9 +114,12 @@ impl State {
         // For groups without name, show first 3 participants
         let count = other_participants.len();
         if count > 3 {
-             format!("{}, {}, {}...", other_participants[0], other_participants[1], other_participants[2])
+            format!(
+                "{}, {}, {}...",
+                other_participants[0], other_participants[1], other_participants[2]
+            )
         } else {
-             other_participants.join(", ")
+            other_participants.join(", ")
         }
     }
 }

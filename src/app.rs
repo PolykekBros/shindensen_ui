@@ -115,7 +115,9 @@ impl MatchEvent for App {
         for action in actions {
             match action.cast() {
                 ShinDensenClientAction::Authenticated => {
-                    self.state.client.user_search(cx, self.state.username.clone());
+                    self.state
+                        .client
+                        .user_search(cx, self.state.username.clone());
                     self.load_chats(cx);
                     log!("Authenticated successfully");
                 }
