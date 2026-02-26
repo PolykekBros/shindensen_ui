@@ -18,7 +18,7 @@ script_mod! {
             show_bg: true
             draw_bg +: {
                 color: #3f497e
-                radius: 5.0
+                border_radius: 5.0
             }
             padding: Inset { top: 0.0, right: 10.0, bottom: 0.0, left: 0.0 }
             margin: Inset { top: 10.0, right: 0.0, bottom: 10.0, left: 0.0 }
@@ -39,4 +39,3 @@ script_mod! {
         }
     }
 }
-
