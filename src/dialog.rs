@@ -1,68 +1,66 @@
-use crate::makepad_widgets::*;
+use makepad_widgets::*;
 use crate::state::*;
 
-live_design! {
-    use link::theme::*;
-    use link::shaders::*;
-    use link::widgets::*;
-    use crate::layout::*;
-    use crate::ui::*;
-    use crate::dialog_list::*;
+script_mod! {
+    use mod.prelude.widgets.*
+    use mod.layout.*
 
-    NewsFeed = {{NewsFeed}} {
-        list = <PortalList> {
-            scroll_bar: <ScrollBar> {}
+    mod.dialog = {}
+
+    mod.dialog.NewsFeed = #(NewsFeed::register_widget(vm)) {
+        list := PortalList {
+            scroll_bar: ScrollBar {}
             auto_tail: true
-            BottomSpace = <View> {height: 100.}
+            BottomSpace := View {height: 100.0}
 
-            post = <CachedView> {
-                flow: Down,
-                user_msg = <Post> {}
+            post := CachedView {
+                flow: Down
+                user_msg := mod.ui.Post {}
             }
         }
     }
 
-    pub DialogPage = {{DialogPage}} <MessageListPage> {
-        contacts = {
-            <ChatList> {}
-            // <Markdown> { body: dep("crate://self/resources/dialog.md") }
+    mod.dialog.DialogPage = #(DialogPage::register_widget(vm)) mod.layout.MessageListPage {
+        contacts +: {
+            mod.dialog_list.ChatList {}
         }
-        dialog = {
-            news_feed = <NewsFeed> {}
-            <View> {
+        dialog +: {
+            news_feed := mod.dialog.NewsFeed {}
+            input_bar := View {
                 width: Fill
                 height: Fit
                 flow: Right
-                <View> {
+                View {
                     width: Fill
                     height: 150.0
-                    scroll_bars: <ScrollBars> {}
-                    msg = <InputField> {
+                    scroll_bars := ScrollBars {}
+                    msg := mod.ui.InputField {
                             width: Fill
                             empty_text: "Type a message..."
                     }
                 }
-                send = <Buttons> {text: "Send"}
+                send := mod.ui.Button {text: "Send"}
             }
         }
     }
 }
 
-#[derive(Live, LiveHook, Widget)]
+#[derive(Script, ScriptHook, Widget)]
 struct DialogPage {
     #[deref]
-    layout: View,
+    view: View,
 }
 
 impl DialogPage {
     pub fn send_message_ws(&mut self, scope: &mut Scope, cx: &mut Cx) {
         let state = scope.data.get_mut::<State>().expect("State not found.");
-        let text = self.text_input(id!(msg)).text();
-        self.text_input(id!(msg)).set_text(cx, "");
+        let input = self.text_input(cx, ids!(dialog.input_bar.msg));
+        let text = input.text();
+        input.set_text(cx, "");
         if let Some(chat_id) = state.open_chat_id {
             log!("Sending message to chat_id: {}", chat_id);
             state.client.send_message(cx, chat_id, text);
-            self.view(id!(news_feed)).redraw(cx);
+            self.view(cx, ids!(news_feed)).redraw(cx);
         } else {
             log!("Error: dialog is not opened!")
         }
@@ -72,11 +70,11 @@ impl DialogPage {
 impl Widget for DialogPage {
     fn handle_event(&mut self, cx: &mut Cx, event: &Event, scope: &mut Scope) {
         let actions = cx.capture_actions(|cx| {
-            self.layout.handle_event(cx, event, scope);
+            self.view.handle_event(cx, event, scope);
         });
-        let send_btn = self.button(id!(send));
-        if send_btn.clicked(&actions) || self.text_input(id!(msg)).returned(&actions).is_some() {
-            let text = self.text_input(id!(msg)).text();
+        let send_btn = self.button(cx, ids!(dialog.input_bar.send));
+        if send_btn.clicked(&actions) || self.text_input(cx, ids!(dialog.input_bar.msg)).returned(&actions).is_some() {
+            let text = self.text_input(cx, ids!(dialog.input_bar.msg)).text();
             if !text.is_empty() {
                 self.send_message_ws(scope, cx);
             }
@@ -84,11 +82,11 @@ impl Widget for DialogPage {
     }
 
     fn draw_walk(&mut self, cx: &mut Cx2d, scope: &mut Scope, walk: Walk) -> DrawStep {
-        self.layout.draw_walk(cx, scope, walk)
+        self.view.draw_walk(cx, scope, walk)
     }
 }
 
-#[derive(Live, LiveHook, Widget)]
+#[derive(Script, ScriptHook, Widget)]
 struct NewsFeed {
     #[deref]
     view: View,
@@ -102,11 +100,8 @@ impl Widget for NewsFeed {
                 let msg_count = state.get_message_number();
                 list.set_item_range(cx, 0, msg_count);
                 while let Some(item_id) = list.next_visible_item(cx) {
-                    if item_id >= msg_count {
-                        continue;
-                    } else {
-                        let template = live_id!(post);
-                        let item = list.item(cx, item_id, template);
+                    if item_id < msg_count {
+                        let item = list.item(cx, item_id, id!(post));
                         if let Some(chat_id) = state.open_chat_id
                             && let Some(messages) = state.msg_history.get(&chat_id)
                             && let Some(msg) = messages.get(item_id)
@@ -119,12 +114,12 @@ impl Widget for NewsFeed {
                                 } else {
                                     msg.sender_id.to_string()
                                 };
-                            item.label(id!(user_msg.username.text))
+                            item.label(cx, ids!(user_msg.body.username.text))
                                 .set_text(cx, &sender_name);
-                            item.label(id!(user_msg.content.text))
+                            item.markdown(cx, ids!(user_msg.body.content.text))
                                 .set_text(cx, msg.content.as_deref().unwrap_or(""));
                         }
-                        item.draw_all(cx, &mut Scope::empty());
+                        item.draw_all_unscoped(cx);
                     }
                 }
             }

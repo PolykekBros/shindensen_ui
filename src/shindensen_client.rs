@@ -1,12 +1,12 @@
-#![allow(clippy::question_mark)]
 use makepad_micro_serde::*;
 use makepad_widgets::*;
+use makepad_widgets::makepad_platform::makepad_network::{WsSend, WsMessage};
 
 #[derive(Default)]
 pub struct ShinDensenClient {
     api_url: String,
     ws_url: String,
-    socket: Option<WebSocket>,
+    socket: Option<LiveId>,
     token: Option<String>,
 }
 
@@ -142,12 +142,17 @@ impl ShinDensenClient {
         cx.http_request(live_id, request);
     }
 
-    fn open_socket(&mut self, _cx: &mut Cx) {
+    fn open_socket(&mut self, cx: &mut Cx) {
         let mut request = HttpRequest::new(self.ws_url.clone(), HttpMethod::GET);
         if let Some(token) = &self.token {
             request.set_header("Authorization".to_string(), format!("Bearer {}", token));
         }
-        self.socket = Some(WebSocket::open(request));
+        let socket_id = live_id!(ShinDensenWebSocket);
+        if let Err(err) = cx.net.ws_open(socket_id, request) {
+            cx.action(ShinDensenClientAction::Error(format!("Failed to open WebSocket: {}", err)));
+        } else {
+            self.socket = Some(socket_id);
+        }
     }
 
     pub fn authorize(&mut self, cx: &mut Cx, user: String) {
@@ -192,72 +197,69 @@ impl ShinDensenClient {
     }
 
     pub fn send_message(&mut self, cx: &mut Cx, chat_id: i64, text: String) {
-        match &mut self.socket {
-            Some(socket) => {
-                let payload = ChatMessagePayload {
-                    chat_id,
-                    content: Some(text),
-                    files: Some(vec![]),
-                };
-                if let Err(e) = socket.send_string(payload.serialize_json()) {
-                    cx.action(ShinDensenClientAction::NetworkError(format!(
-                        "WebSocket send error: {e:?}"
-                    )));
-                }
+        if let Some(socket_id) = self.socket {
+            let payload = ChatMessagePayload {
+                chat_id,
+                content: Some(text),
+                files: Some(vec![]),
+            };
+            if let Err(err) = cx.net.ws_send(socket_id, WsSend::Text(payload.serialize_json())) {
+                cx.action(ShinDensenClientAction::Error(format!("Failed to send WebSocket message: {}", err)));
             }
-            None => cx.action(ShinDensenClientAction::Error(
+        } else {
+            cx.action(ShinDensenClientAction::Error(
                 "Socket is NOT open, cannot send message!".to_string(),
-            )),
+            ));
         }
     }
 
-    pub fn handle_signal(&mut self, cx: &mut Cx) {
-        if let Some(socket) = &mut self.socket {
-            while let Ok(msg) = socket.try_recv() {
-                match msg {
-                    WebSocketMessage::Opened => {
-                        log!("WebSocket connection opened successfully");
-                    }
-                    WebSocketMessage::String(data) => match ChatMessage::deserialize_json(&data) {
-                        Ok(msg) => {
-                            cx.action(ShinDensenClientAction::NewMessage(msg));
-                        }
-                        Err(e) => cx.action(ShinDensenClientAction::Error(format!(
-                            "Parsing WebSocketMessage: {e:?}"
-                        ))),
-                    },
-                    WebSocketMessage::Closed => {
-                        cx.action(ShinDensenClientAction::NetworkError(
-                            "WebSocket Closed".to_string(),
-                        ));
-                        self.open_socket(cx);
-                        break;
-                    }
-                    WebSocketMessage::Error(e) => {
-                        cx.action(ShinDensenClientAction::NetworkError(format!(
-                            "WebSocket error: {e:?}"
-                        )));
-                        self.open_socket(cx);
-                        break;
-                    }
-                    _ => (),
-                }
-            }
-        }
+    pub fn handle_signal(&mut self, _cx: &mut Cx) {
+        // Networking is handled via events in modern Makepad, no need for manual signal polling
     }
 
     pub fn handle_network_responses(&mut self, cx: &mut Cx, responses: &NetworkResponsesEvent) {
         for event in responses {
-            match &event.response {
-                NetworkResponse::HttpResponse(response) => {
+            match event {
+                NetworkResponse::HttpResponse { request_id, response } => {
                     let data = response.get_string_body().unwrap_or_default();
-                    self.handle_response(cx, event.request_id, response.status_code, data);
+                    self.handle_response(cx, *request_id, response.status_code, data);
                 }
-                NetworkResponse::HttpRequestError(e) => {
+                NetworkResponse::HttpError { request_id, error } => {
                     cx.action(ShinDensenClientAction::NetworkError(format!(
                         "HttpRequestError for {}: {:?}",
-                        event.request_id, e
+                        request_id, error.message
                     )));
+                }
+                NetworkResponse::WsOpened { socket_id } => {
+                    if self.socket == Some(*socket_id) {
+                        log!("WebSocket opened successfully");
+                    }
+                }
+                NetworkResponse::WsMessage { socket_id, message } => {
+                    if self.socket == Some(*socket_id) {
+                        match message {
+                            WsMessage::Text(data) => {
+                                if let Ok(msg) = ChatMessage::deserialize_json(data) {
+                                    cx.action(ShinDensenClientAction::NewMessage(msg));
+                                }
+                            }
+                            WsMessage::Binary(_) => {
+                                log!("Received unexpected binary WebSocket message");
+                            }
+                        }
+                    }
+                }
+                NetworkResponse::WsClosed { socket_id } => {
+                    if self.socket == Some(*socket_id) {
+                        log!("WebSocket closed");
+                        self.socket = None;
+                    }
+                }
+                NetworkResponse::WsError { socket_id, message } => {
+                    if self.socket == Some(*socket_id) {
+                        error!("WebSocket error: {}", message);
+                        self.socket = None;
+                    }
                 }
                 _ => {}
             }

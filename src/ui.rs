@@ -1,246 +1,194 @@
 use makepad_widgets::*;
 
-live_design! {
-    use link::theme::*;
-    use link::shaders::*;
-    use link::widgets::*;
+script_mod! {
+    use mod.prelude.widgets.*
 
-    pub InputField = <TextInput> {
-        width: 500.0
+    mod.ui = {}
+    mod.ui.header_font = { font_size: 16.0, line_spacing: 1.2 }
+    mod.ui.body_font = { font_size: 13.0, line_spacing: 1.2 }
+
+    mod.ui.InputField = TextInput {
+        width: Fill
         height: Fit
-        margin: { top: 6.0, right: 6.0, bottom: 6.0, left: 6.0 }
-        label_align: { x: 0.0, y: 0.5 }
+        margin: Inset { top: 8.0, right: 8.0, bottom: 8.0, left: 8.0 }
+        padding: Inset { top: 10.0, right: 10.0, bottom: 10.0, left: 10.0 }
+        label_align: Align { x: 0.0, y: 0.5 }
 
-        text: ""
         empty_text: ""
         is_password: false
         is_numeric_only: false
         is_read_only: false
-        blink_speed: 0.5
 
-        draw_bg: {
-            color_dither: 1.0
-
-            border_radius: 2.5
-            border_size: 0.75
-
-            color: #00000040
-            color_hover: #00000040
-            color_down: #00000066
-            color_focus: #00000040
-            color_disabled: #00000000
-            color_empty: #00000040
-
-            border_color_2: #FFFFFF40
-            border_color_2_hover: #959595FF
-            border_color_2_down: #959595FF
-            border_color_2_focus: #FF00FFFF
-            border_color_2_disabled: #747474FF
-            border_color_2_empty: #FFFFFF40
+        draw_bg +: {
+            color: #1a1a2e
+            instance radius: 4.0
+            instance border_width: 1.0
+            instance border_color: #3a3a5a
         }
 
-        draw_text: {
+        draw_text +: {
             font_scale: 1.0
-            text_style: { font_size: 14.0, line_spacing: 1.2 }
-
-            color: #FFFFFFA6
-            color_hover: #FFFFFFA6
-            color_down: #FFFFFF80
-            color_focus: #FFFFFFA6
-            color_disabled: #FFFFFF26
-
-            color_empty: #FFFFFF40
-            color_empty_hover: #FFAA00FF
-            color_empty_focus: #FF5C39FF
+            text_style: { font_size: 13.0, line_spacing: 1.2 }
+            color: #dcdcdc
         }
 
-        draw_selection: {
-            border_radius: 1.25
-
-            color: #0000FFFF
-            color_hover: #0000FFFF
-            color_down: #FF00FFFF
-            color_focus: #0000FFFF
-            color_disabled: #00000000
-            color_empty: #00000000
+        draw_selection +: {
+            color: #3d5afe80
         }
 
-        draw_cursor: {
-            border_radius: 1.25
-            color: #FFFFFFFF
+        draw_cursor +: {
+            color: #ffffff
         }
     }
 
-    pub Buttons = <Button> {
-        width: 70
-        height: 30
-        padding: { top: 6.0, right: 6.0, bottom: 10.0, left: 6.0 }
-        spacing: 3.0
+    mod.ui.Button = Button {
+        width: Fit
+        height: Fit
+        padding: Inset { top: 8.0, right: 16.0, bottom: 8.0, left: 16.0 }
+        spacing: 5.0
         flow: Right
 
-        enable_long_press: true
         grab_key_focus: true
-        reset_hover_on_click: false
         visible: true
         text: "Button"
 
-        label_walk: {
-            width: Fit,
-            height: Fit,
-            margin: { top: 0.0, right: 3.0, bottom: 0.0, left: 3.0 }
-        }
-
-        icon_walk: {
-            width: 15.6,
-            height: Fit,
-            margin: { top: 0.0, right: 3.0, bottom: 0.0, left: 3.0 }
-        }
-
-        draw_text: {
-            color: #FFFFFFA6
-            color_hover: #FFFFFFA6
-            color_down: #FFFFFF40
-            color_focus: #FFFFFFA6
-            color_disabled: #FFFFFF26
-
+        draw_text +: {
+            color: #ffffff
             text_style: {
-                font_size: 10.0
+                font_size: 11.0
                 line_spacing: 1.2
             }
         }
 
-        draw_bg: {
-            color_dither: 1.0
-
-            border_size: 0.75
-            border_radius: 2.5
-
-            color: #FFFFFF1A
-            color_hover: #FFFFFF26
-            color_down: #00000026
-            color_focus: #FFFFFF1A
-            color_disabled: #FFFFFF0D
-
-            border_color_2: #00000066
-            border_color_2_hover: #00000066
-            border_color_2_down: #FFFFFF40
-            border_color_2_focus: #000000BF
-            border_color_2_disabled: #333333FF
+        draw_bg +: {
+            color: #3f497e
+            instance border_width: 0.0
+            instance radius: 4.0
+            
+            fn pixel(self) -> vec4 {
+                let hover = self.hover;
+                let pressed = self.pressed;
+                let color = mix(
+                    mix(#3f497e, #4f5ba0, hover),
+                    #2d3560,
+                    pressed
+                );
+                return fill(color);
+            }
         }
     }
 
-    pub TextLabel = <Label> {
+    mod.ui.TextLabel = Label {
         width: Fit
         height: Fit
-        margin: { top: 10.0, right: 6.0, bottom: 10.0, left: 6.0 }
-        padding: { top: 5.0, right: 3.0, bottom: 5.0, left: 3.0 }
-        flow: RightWrap
-        hover_actions_enabled: false
-        text: "Welcome to ShinDensen!"
+        margin: Inset { top: 10.0, right: 10.0, bottom: 10.0, left: 10.0 }
+        text: "Label"
 
-        draw_text: {
+        draw_text +: {
             font_scale: 1.0
-
-            color:  #fff
-
+            color: #ffffff
             text_style: {
-                font_size: 16.0
+                font_size: 13.0
                 line_spacing: 1.2
             }
         }
     }
 
-    pub AlertField = <RoundedView> {
+    mod.ui.AlertField = RoundedView {
         width: Fit
         height: Fit
-        visible: false,
-        padding: { top: 5.0, right: 10.0, bottom: 5.0, left: 10.0 }
-        margin: { top: 5.0 }
-        draw_bg: {
-            color: #FF2400
-            border_size: 1.5
-            border_color: #2d2c40
+        visible: false
+        padding: Inset { top: 8.0, right: 12.0, bottom: 8.0, left: 12.0 }
+        margin: Inset { top: 5.0, right: 0.0, bottom: 0.0, left: 0.0 }
+        draw_bg +: {
+            color: #ff444422
+            instance border_width: 1.0
+            instance border_color: #ff4444
+            instance radius: 4.0
         }
-        alert_text = <TextLabel> {
-            padding: { top: 0.0, right: 0.0, bottom: 0.0, left: 0.0 }
-            margin: { top: 0.0, right: 0.0, bottom: 0.0, left: 0.0 }
-            draw_text: { text_style: { font_size: 12 } }
+        alert_text := mod.ui.TextLabel {
+            margin: Inset { top: 0.0, right: 0.0, bottom: 0.0, left: 0.0 }
+            draw_text: { color: #ff4444, text_style: { font_size: 11.0 } }
         }
     }
 
-    pub Post = <View> {
+    mod.ui.Post = View {
         width: Fill
         height: Fit
-        padding: { top: 0., bottom: 0. }
-        margin: { top: 10.0, bottom: 10. }
+        padding: Inset { top: 5.0, right: 5.0, bottom: 5.0, left: 5.0 }
 
-        body = <RoundedView> {
+        body := RoundedView {
             width: Fill
             height: Fit
             flow: Down
-            draw_bg: {
-                color: #3f497e
-                border_size: 1.5
-                border_color: #2d2c40
+            spacing: 0.0
+            
+            draw_bg +: {
+                color: #2a2a3a
+                instance radius: 8.0
             }
 
-            username = <RoundedView> {
+            username := View {
                 width: Fill
                 height: Fit
-                padding: { top: 5., right: 10.,bottom: 5., left: 10. }
-                show_bg: true
-                draw_bg: {
-                    color: #323456
-                    border_size: 1.5
-                    border_color: #2d2c40
+                padding: Inset { top: 8.0, right: 12.0, bottom: 4.0, left: 12.0 }
+                text := Label { 
+                    draw_text: { 
+                        color: #8888cc, 
+                        text_style: { font_size: 11.0 } 
+                    } 
                 }
-                text = <H4> { text: "" }
             }
-            content = <View> {
+            content := View {
                 width: Fill
                 height: Fit
-                padding: { top: 10., right: 10.,bottom: 10., left: 10. }
-                text = <P> { text: "" }
+                padding: Inset { top: 4.0, right: 12.0, bottom: 12.0, left: 12.0 }
+                text := Markdown { 
+                    width: Fill
+                    height: Fit
+                    body: ""
+                    draw_text: { 
+                        color: #ffffff, 
+                        text_style: { font_size: 13.0 } 
+                    } 
+                }
             }
         }
     }
 
-    pub Chats = <View> {
+    mod.ui.ChatItem = View {
         width: Fill
         height: Fit
-        cursor: Hand
-        padding: { top: 0., bottom: 0. }
-        margin: { top: 10.0, bottom: 10. }
+        padding: Inset { top: 2.0, right: 10.0, bottom: 2.0, left: 10.0 }
 
-        body = <RoundedView> {
+        body := RoundedView {
             width: Fill
             height: Fit
             flow: Down
-            draw_bg: {
-                color: #3f497e
-                border_size: 1.5
-                border_color: #2d2c40
+            padding: Inset { top: 10.0, right: 12.0, bottom: 10.0, left: 12.0 }
+            spacing: 4.0
+            
+            draw_bg +: {
+                color: #00000000
+                instance radius: 4.0
+                
+                fn pixel(self) -> vec4 {
+                    return fill(mix(#00000000, #ffffff11, self.hover));
+                }
             }
 
-            target_usr = <RoundedView> {
-                width: Fill
-                height: Fit
-                padding: { top: 5., right: 10.,bottom: 5., left: 10. }
-                show_bg: true
-                draw_bg: {
-                    color: #323456
-                    border_size: 1.5
-                    border_color: #2d2c40
-                }
-                text = <H4> { text: "" }
+            target_usr := Label { 
+                draw_text: { 
+                    color: #ffffff, 
+                    text_style: { font_size: 13.0 } 
+                } 
             }
-            last_msg = <View> {
-                width: Fill
-                height: Fit
-                padding: { top: 10., right: 10.,bottom: 10., left: 10. }
-                text = <P> { text: "" }
+            last_msg := Label { 
+                draw_text: { 
+                    color: #999999, 
+                    text_style: { font_size: 11.0 } 
+                } 
             }
         }
     }
-
 }

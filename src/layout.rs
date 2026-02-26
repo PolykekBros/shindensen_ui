@@ -1,41 +1,42 @@
-use crate::makepad_widgets::*;
+use makepad_widgets::*;
 
-live_design! {
-    use link::theme::*;
-    use link::shaders::*;
-    use link::widgets::*;
+script_mod! {
+    use mod.prelude.widgets.*
 
-    pub MessageListPage = <View> {
+    mod.layout = {}
+
+    mod.layout.MessageListPage = View {
         height: Fill
         width: Fill
         flow: Right
-        padding: 0
-        spacing: 0.
+        padding: 0.0
+        spacing: 0.0
 
-        contacts = <RoundedView> {
-            width: 350.
+        contacts := RoundedView {
+            width: 350.0
             height: Fill
             show_bg: true
-            draw_bg: {
-                color: (THEME_COLOR_INSET)
-                border_radius: (THEME_CORNER_RADIUS)
+            draw_bg +: {
+                color: #3f497e
+                radius: 5.0
             }
-            padding: <THEME_MSPACE_3> { top: 0., right: (THEME_SPACE_2) }
-            margin: <THEME_MSPACE_V_2> { }
+            padding: Inset { top: 0.0, right: 10.0, bottom: 0.0, left: 0.0 }
+            margin: Inset { top: 10.0, right: 0.0, bottom: 10.0, left: 0.0 }
 
-            flow: Down,
-            spacing: (THEME_SPACE_2)
-            scroll_bars: <ScrollBars> {show_scroll_x: false, show_scroll_y: true}
+            flow: Down
+            spacing: 10.0
+            scroll_bars := ScrollBars {show_scroll_x: false, show_scroll_y: true}
         }
 
-        dialog = <View> {
+        dialog := View {
             width: Fill
             height: Fill
             flow: Down
-            spacing: (THEME_SPACE_2)
-            padding: <THEME_MSPACE_3> { right: (THEME_SPACE_2 * 3) }
-            margin: <THEME_MSPACE_V_2> {}
-            scroll_bars: <ScrollBars> {show_scroll_x: false, show_scroll_y: true}
+            spacing: 10.0
+            padding: Inset { top: 0.0, right: 30.0, bottom: 0.0, left: 0.0 }
+            margin: Inset { top: 10.0, right: 0.0, bottom: 10.0, left: 0.0 }
+            scroll_bars := ScrollBars {show_scroll_x: false, show_scroll_y: true}
         }
     }
 }
+

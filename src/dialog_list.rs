@@ -1,31 +1,31 @@
-use crate::makepad_widgets::*;
+use makepad_widgets::*;
 use crate::state::*;
 
-live_design! {
-    use link::theme::*;
-    use link::shaders::*;
-    use link::widgets::*;
-    use crate::ui::*;
+script_mod! {
+    use mod.prelude.widgets.*
+    use mod.layout.*
 
-    pub ChatList = {{ChatList}} {
+    mod.dialog_list = {}
+
+    mod.dialog_list.ChatList = #(ChatList::register_widget(vm)) {
         flow: Down
-        chat_list = <PortalList> {
-            scroll_bar: <ScrollBar> {}
+        chat_list := PortalList {
+            scroll_bar: ScrollBar {}
             auto_tail: true
-            BottomSpace = <View> {height: 100.}
+            BottomSpace := View {height: 100.0}
 
-            chat = <CachedView> {
-                user_chat = <Chats> {}
+            chat := CachedView {
+                user_chat := mod.ui.ChatItem {}
             }
         }
-        new_chat_btn = <Buttons> {
+        new_chat_btn := mod.ui.Button {
             width: Fill, height: Fit
             text: "Add new chat"
         }
     }
 }
 
-#[derive(Live, LiveHook, Widget)]
+#[derive(Script, ScriptHook, Widget)]
 struct ChatList {
     #[deref]
     view: View,
@@ -51,26 +51,23 @@ impl Widget for ChatList {
                 let chat_count = chat_ids.len();
                 list.set_item_range(cx, 0, chat_count);
                 while let Some(item_id) = list.next_visible_item(cx) {
-                    if item_id >= chat_count {
-                        continue;
-                    } else {
-                        let template = live_id!(chat);
-                        let item = list.item(cx, item_id, template);
+                    if item_id < chat_count {
+                        let item = list.item(cx, item_id, id!(chat));
                         if let Some(chat_id) = chat_ids.get(item_id) {
                             let chat_name = state.get_chat_name(*chat_id);
-                            item.label(id!(user_chat.target_usr.text))
+                            item.label(cx, ids!(user_chat.body.target_usr))
                                 .set_text(cx, &chat_name);
 
                             if let Some(msgs) = state.msg_history.get(chat_id) {
                                 if let Some(last_msg) = msgs.last() {
-                                    item.label(id!(user_chat.last_msg.text))
+                                    item.label(cx, ids!(user_chat.body.last_msg))
                                         .set_text(cx, last_msg.content.as_deref().unwrap_or(""));
                                 } else {
-                                    item.label(id!(user_chat.last_msg.text)).set_text(cx, "");
+                                    item.label(cx, ids!(user_chat.body.last_msg)).set_text(cx, "");
                                 }
                             }
                         }
-                        item.draw_all(cx, &mut Scope::empty());
+                        item.draw_all_unscoped(cx);
                     }
                 }
             }
@@ -83,10 +80,10 @@ impl Widget for ChatList {
             self.view.handle_event(cx, event, scope);
         });
 
-        let portal_list = self.view.portal_list(id!(chat_list));
+        let portal_list = self.view.portal_list(cx, ids!(chat_list));
         for (item_id, _) in portal_list.items_with_actions(&actions) {
-            let item_widget = portal_list.item(cx, item_id, live_id!(chat));
-            let body_view = item_widget.view(id!(body));
+            let item_widget = portal_list.item(cx, item_id, id!(chat));
+            let body_view = item_widget.view(cx, ids!(body));
             for action in &actions {
                 if let ViewAction::FingerUp(fe) = action.as_widget_action().cast()
                     && body_view.area().rect(cx).contains(fe.abs)
@@ -103,7 +100,7 @@ impl Widget for ChatList {
         }
 
         let state = scope.data.get_mut::<State>().expect("State not found.");
-        let new_chat_btn = self.button(id!(new_chat_btn));
+        let new_chat_btn = self.button(cx, ids!(new_chat_btn));
         if new_chat_btn.clicked(&actions) {
             state.screen = Screen::NewChatInit;
         }
