@@ -1,4 +1,4 @@
-use crate::state::*;
+use crate::{app::AppAction, state::*};
 use makepad_widgets::*;
 
 script_mod! {
@@ -98,10 +98,9 @@ impl Widget for ChatList {
             }
         }
 
-        let state = scope.data.get_mut::<State>().expect("State not found.");
         let new_chat_btn = self.button(cx, ids!(new_chat_btn));
         if new_chat_btn.clicked(&actions) {
-            state.screen = Screen::NewChatInit;
+            cx.action(AppAction::SwitchWindow(Screen::NewChatInit));
         }
     }
 }

@@ -19,26 +19,28 @@ script_mod! {
         }
     }
 
-    mod.widgets.DialogPage = #(DialogPage::register_widget(vm)) MessageListPage {
-        contacts +: {
-            ChatList{}
-        }
-        dialog +: {
-            news_feed := NewsFeed{}
-            input_bar := View {
-                width: Fill
-                height: Fit
-                flow: Right
-                View {
+    mod.widgets.DialogPage = #(DialogPage::register_widget(vm)) {
+        MessageListPage {
+            contacts +: {
+                ChatList{}
+            }
+            dialog +: {
+                news_feed := NewsFeed{}
+                input_bar := View {
                     width: Fill
-                    height: 150.0
-                    scroll_bars := ScrollBars{}
-                    msg := SDTextInput{
+                    height: Fit
+                    flow: Right
+                    View {
                         width: Fill
-                        empty_text: "Type a message..."
+                        height: 150.0
+                        scroll_bars := ScrollBars{}
+                        msg := SDTextInput{
+                            width: Fill
+                            empty_text: "Type a message..."
+                        }
                     }
+                    send := SDButton{text: "Send"}
                 }
-                send := SDButton{text: "Send"}
             }
         }
     }

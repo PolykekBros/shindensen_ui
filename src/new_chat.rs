@@ -1,4 +1,4 @@
-use crate::state::*;
+use crate::{app::AppAction, state::*};
 use makepad_widgets::*;
 
 script_mod! {
@@ -78,7 +78,7 @@ impl Widget for NewChat {
         }
 
         if btn_back.clicked(&actions) {
-            state.screen = Screen::Dialog;
+            cx.action(AppAction::SwitchWindow(Screen::Dialog));
             input.set_text(cx, "");
             self.widget(cx, ids!(error_label)).set_visible(cx, false);
         }

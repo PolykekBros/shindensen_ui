@@ -6,6 +6,13 @@ use makepad_widgets::*;
 pub const API_URL: &str = "http://127.0.0.1:3000";
 pub const WS_URL: &str = "ws://127.0.0.1:3000/ws";
 
+#[derive(Clone, Debug, Default, PartialEq)]
+pub enum AppAction {
+    SwitchWindow(Screen),
+    #[default]
+    None,
+}
+
 script_mod! {
     use mod.prelude.widgets.*
     use mod.widgets.*
@@ -15,18 +22,20 @@ script_mod! {
             main_window := Window {
                 window +: { title: "ShinDensen" }
                 body +: {
-                    width: Fill
-                    height: Fill
-                    flow: Overlay
-                    spacing: 0.0
-                    auth_page := LoginForm {
-                        visible: true
-                    }
-                    dialog_page := DialogPage {
-                        visible: false
-                    }
-                    new_chat := NewChat {
-                        visible: false
+                    main_view := View{
+                        width: Fill
+                        height: Fill
+                        flow: Down
+                        spacing: 0.0
+                        auth_page := LoginForm {
+                            visible: true
+                        }
+                        dialog_page := DialogPage {
+                            visible: false
+                        }
+                        new_chat := NewChat {
+                            visible: false
+                        }
                     }
                 }
             }
@@ -121,13 +130,13 @@ impl MatchEvent for App {
                         .user_search(cx, self.state.username.clone());
                     self.load_chats(cx);
                     log!("Authenticated successfully as {}", self.state.username);
-                    self.switch_screen(cx, Screen::Dialog);
+                    cx.action(AppAction::SwitchWindow(Screen::Dialog));
                 }
                 ShinDensenClientAction::NewMessage(msg) => {
                     let sender_id = msg.sender_id;
                     self.state.add_message(msg);
                     self.state.fetch_user(cx, sender_id);
-                    self.ui.redraw(cx);
+                    self.ui.widget(cx, ids!(dialog_page)).redraw(cx);
                 }
                 ShinDensenClientAction::Chats(chats) => {
                     for chat in chats {
@@ -138,8 +147,8 @@ impl MatchEvent for App {
                         self.state.chat_info.insert(chat_id, chat);
                         self.state.client.get_history(cx, chat_id);
                     }
-                    self.ui.redraw(cx);
                     log!("Chats loaded: {}", self.state.chat_info.len());
+                    self.ui.widget(cx, ids!(dialog_page)).redraw(cx);
                 }
                 ShinDensenClientAction::History(res) => {
                     for msg in &res.messages {
@@ -153,7 +162,7 @@ impl MatchEvent for App {
                         res.chat_id,
                         res.messages.len()
                     );
-                    cx.redraw_all();
+                    self.ui.widget(cx, ids!(dialog_page)).redraw(cx);
                 }
                 ShinDensenClientAction::Token(_) => {
                     // Token is handled internally by client, but we could store it if needed
@@ -180,12 +189,12 @@ impl MatchEvent for App {
                             .widget(cx, ids!(main_window.body.new_chat.error_label))
                             .set_visible(cx, true);
                     }
-                    self.ui.redraw(cx);
+                    self.ui.widget(cx, ids!(dialog_page)).redraw(cx);
                 }
                 ShinDensenClientAction::UserInfo(info) => {
                     self.state.pending_user_fetches.remove(&info.id);
                     self.state.user_info.insert(info.id, info);
-                    self.ui.redraw(cx);
+                    self.ui.widget(cx, ids!(dialog_page)).redraw(cx);
                 }
                 ShinDensenClientAction::UserNotFound => {
                     error!("User not found");
@@ -200,6 +209,7 @@ impl MatchEvent for App {
                         res.chat_id,
                         res.status
                     );
+                    cx.action(AppAction::SwitchWindow(Screen::Dialog));
                 }
                 ShinDensenClientAction::Error(e) => {
                     error!("Client Error: {}", e);
@@ -208,6 +218,12 @@ impl MatchEvent for App {
                     error!("Network Error: {}", e);
                 }
                 ShinDensenClientAction::None => (),
+            }
+            match action.cast() {
+                AppAction::SwitchWindow(screen) => {
+                    self.switch_screen(cx, screen);
+                }
+                AppAction::None => (),
             }
         }
     }
