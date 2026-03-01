@@ -1,38 +1,31 @@
 use crate::shindensen_client::*;
 use crate::state::*;
-use makepad_widgets::*;
 use makepad_micro_serde::*;
+use makepad_widgets::*;
 
 pub const API_URL: &str = "http://127.0.0.1:3000";
 pub const WS_URL: &str = "ws://127.0.0.1:3000/ws";
 
 script_mod! {
     use mod.prelude.widgets.*
-    use mod.layout.*
-    use mod.dialog_list.*
-    use mod.dialog.*
-    use mod.autho.*
-    use mod.new_chat.*
+    use mod.widgets.*
 
     startup() do #(App::script_component(vm)) {
         ui: Root {
             main_window := Window {
                 window +: { title: "ShinDensen" }
                 body +: {
-                    width: Fill, height: Fill,
-                    flow: Overlay,
-                    spacing: 0.0,
-                    margin: Inset { top: 0.0, left: 0.0, right: 0.0, bottom: 0.0},
-                    auth_page := mod.autho.LoginForm {
-                        width: Fill, height: Fill,
+                    width: Fill
+                    height: Fill
+                    flow: Overlay
+                    spacing: 0.0
+                    auth_page := LoginForm {
                         visible: true
                     }
-                    dialog_page := mod.dialog.DialogPage {
-                        width: Fill, height: Fill,
+                    dialog_page := DialogPage {
                         visible: false
                     }
-                    new_chat := mod.new_chat.NewChat {
-                        width: Fill, height: Fill,
+                    new_chat := NewChat {
                         visible: false
                     }
                 }
@@ -66,25 +59,36 @@ impl App {
 }
 
 impl App {
-    fn apply_visibility(&mut self, cx: &mut Cx) {
+    fn switch_screen(&mut self, cx: &mut Cx, screen: Screen) {
+        let auth_page = self.ui.widget(cx, ids!(auth_page));
+        let dialog_page = self.ui.widget(cx, ids!(dialog_page));
+        let new_chat = self.ui.widget(cx, ids!(new_chat));
         match self.state.screen {
             Screen::Auth => {
-                self.ui.widget(cx, ids!(main_window.body.auth_page)).set_visible(cx, true);
-                self.ui.widget(cx, ids!(main_window.body.dialog_page)).set_visible(cx, false);
-                self.ui.widget(cx, ids!(main_window.body.new_chat)).set_visible(cx, false);
+                auth_page.set_visible(cx, false);
             }
             Screen::Dialog => {
-                self.ui.widget(cx, ids!(main_window.body.auth_page)).set_visible(cx, false);
-                self.ui.widget(cx, ids!(main_window.body.dialog_page)).set_visible(cx, true);
-                self.ui.widget(cx, ids!(main_window.body.new_chat)).set_visible(cx, false);
+                dialog_page.set_visible(cx, false);
             }
             Screen::NewChatInit => {
-                self.ui.widget(cx, ids!(main_window.body.auth_page)).set_visible(cx, false);
-                self.ui.widget(cx, ids!(main_window.body.dialog_page)).set_visible(cx, false);
-                self.ui.widget(cx, ids!(main_window.body.new_chat)).set_visible(cx, true);
+                new_chat.set_visible(cx, false);
             }
         }
-        self.ui.redraw(cx);
+        match screen {
+            Screen::Auth => {
+                auth_page.set_visible(cx, true);
+                auth_page.redraw(cx);
+            }
+            Screen::Dialog => {
+                dialog_page.set_visible(cx, true);
+                dialog_page.redraw(cx);
+            }
+            Screen::NewChatInit => {
+                new_chat.set_visible(cx, true);
+                new_chat.redraw(cx);
+            }
+        }
+        self.state.screen = screen;
     }
 
     pub fn load_chats(&mut self, cx: &mut Cx) {
@@ -93,11 +97,11 @@ impl App {
 
     fn new_chat_init(&mut self, cx: &mut Cx) {
         self.state.screen = Screen::Dialog;
-        self.ui.text_input(cx, ids!(main_window.body.new_chat.chat_name)).set_text(cx, "");
+        self.ui
+            .text_input(cx, ids!(main_window.body.new_chat.chat_name))
+            .set_text(cx, "");
     }
 }
-
-
 
 impl MatchEvent for App {
     fn handle_draw_2d(&mut self, cx: &mut Cx2d) {
@@ -116,7 +120,8 @@ impl MatchEvent for App {
                         .client
                         .user_search(cx, self.state.username.clone());
                     self.load_chats(cx);
-                    log!("Authenticated successfully");
+                    log!("Authenticated successfully as {}", self.state.username);
+                    self.switch_screen(cx, Screen::Dialog);
                 }
                 ShinDensenClientAction::NewMessage(msg) => {
                     let sender_id = msg.sender_id;
@@ -140,7 +145,9 @@ impl MatchEvent for App {
                     for msg in &res.messages {
                         self.state.fetch_user(cx, msg.sender_id);
                     }
-                    self.state.msg_history.insert(res.chat_id, res.messages.clone());
+                    self.state
+                        .msg_history
+                        .insert(res.chat_id, res.messages.clone());
                     log!(
                         "History loaded for chat: {}: {} messages",
                         res.chat_id,
@@ -213,8 +220,8 @@ impl MatchEvent for App {
 impl AppMain for App {
     fn handle_event(&mut self, cx: &mut Cx, event: &Event) {
         self.match_event(cx, event);
-        self.ui.handle_event(cx, event, &mut Scope::with_data(&mut self.state));
-        self.apply_visibility(cx);
+        self.ui
+            .handle_event(cx, event, &mut Scope::with_data(&mut self.state));
     }
 }
 

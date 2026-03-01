@@ -3,11 +3,7 @@ use makepad_widgets::*;
 script_mod! {
     use mod.prelude.widgets.*
 
-    mod.ui = {}
-    mod.ui.header_font = { font_size: 16.0, line_spacing: 1.2 }
-    mod.ui.body_font = { font_size: 13.0, line_spacing: 1.2 }
-
-    mod.ui.InputField = TextInput {
+    mod.widgets.SDTextInput = TextInput{
         width: Fill
         height: Fit
         margin: Inset { top: 8.0, right: 8.0, bottom: 8.0, left: 8.0 }
@@ -41,7 +37,7 @@ script_mod! {
         }
     }
 
-    mod.ui.Button = Button {
+    mod.widgets.SDButton = Button {
         width: Fit
         height: Fit
         padding: Inset { top: 8.0, right: 16.0, bottom: 8.0, left: 16.0 }
@@ -69,7 +65,7 @@ script_mod! {
         }
     }
 
-    mod.ui.TextLabel = Label {
+    let SDLabel = Label {
         width: Fit
         height: Fit
         margin: Inset { top: 10.0, right: 10.0, bottom: 10.0, left: 10.0 }
@@ -85,7 +81,7 @@ script_mod! {
         }
     }
 
-    mod.ui.AlertField = RoundedView {
+    mod.widgets.AlertField = RoundedView {
         width: Fit
         height: Fit
         visible: false
@@ -97,13 +93,13 @@ script_mod! {
             border_color: #ff4444
             border_radius: 4.0
         }
-        alert_text := mod.ui.TextLabel {
+        alert_text := SDLabel {
             margin: Inset { top: 0.0, right: 0.0, bottom: 0.0, left: 0.0 }
             draw_text +: { color: #ff4444, text_style +: { font_size: 11.0 } }
         }
     }
 
-    mod.ui.Post = View {
+    mod.widgets.Post = View {
         width: Fill
         height: Fit
         padding: Inset { top: 5.0, right: 5.0, bottom: 5.0, left: 5.0 }
@@ -123,7 +119,7 @@ script_mod! {
                 width: Fill
                 height: Fit
                 padding: Inset { top: 8.0, right: 12.0, bottom: 4.0, left: 12.0 }
-                text := Label {
+                text := SDLabel {
                     draw_text +: {
                         color: #8888cc,
                         text_style +: { font_size: 11.0 }
@@ -147,7 +143,7 @@ script_mod! {
         }
     }
 
-    mod.ui.ChatItem = View {
+    mod.widgets.ChatItem = View {
         width: Fill
         height: Fit
         padding: Inset { top: 2.0, right: 10.0, bottom: 2.0, left: 10.0 }
@@ -165,13 +161,13 @@ script_mod! {
                 border_radius: 4.0
             }
 
-            target_usr := Label {
+            target_usr := SDLabel {
                 draw_text +: {
                     color: #ffffff,
                     text_style +: { font_size: 13.0 }
                 }
             }
-            last_msg := Label {
+            last_msg := SDLabel {
                 draw_text +: {
                     color: #999999,
                     text_style +: { font_size: 11.0 }
@@ -179,4 +175,6 @@ script_mod! {
             }
         }
     }
+
+    mod.widgets.SDLabel = SDLabel
 }

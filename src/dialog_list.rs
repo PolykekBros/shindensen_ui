@@ -1,24 +1,22 @@
-use makepad_widgets::*;
 use crate::state::*;
+use makepad_widgets::*;
 
 script_mod! {
     use mod.prelude.widgets.*
-    use mod.layout.*
+    use mod.widgets.*
 
-    mod.dialog_list = {}
-
-    mod.dialog_list.ChatList = #(ChatList::register_widget(vm)) {
+    mod.widgets.ChatList = #(ChatList::register_widget(vm)) {
         flow: Down
-        chat_list := PortalList {
-            scroll_bar: ScrollBar {}
+        chat_list := PortalList{
+            scroll_bar: ScrollBar{}
             auto_tail: true
-            BottomSpace := View {height: 100.0}
+            BottomSpace := View{height: 100.0}
 
-            chat := CachedView {
-                user_chat := mod.ui.ChatItem {}
+            chat := CachedView{
+                user_chat := ChatItem{}
             }
         }
-        new_chat_btn := mod.ui.Button {
+        new_chat_btn := SDButton{
             width: Fill, height: Fit
             text: "Add new chat"
         }
@@ -63,7 +61,8 @@ impl Widget for ChatList {
                                     item.label(cx, ids!(user_chat.body.last_msg))
                                         .set_text(cx, last_msg.content.as_deref().unwrap_or(""));
                                 } else {
-                                    item.label(cx, ids!(user_chat.body.last_msg)).set_text(cx, "");
+                                    item.label(cx, ids!(user_chat.body.last_msg))
+                                        .set_text(cx, "");
                                 }
                             }
                         }

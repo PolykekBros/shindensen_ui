@@ -1,31 +1,30 @@
-use makepad_widgets::*;
 use crate::state::*;
+use makepad_widgets::*;
 
 script_mod! {
     use mod.prelude.widgets.*
-    use mod.layout.*
+    use mod.widgets.*
 
-    mod.dialog = {}
-
-    mod.dialog.NewsFeed = #(NewsFeed::register_widget(vm)) {
-        list := PortalList {
-            scroll_bar: ScrollBar {}
+    let NewsFeed = #(NewsFeed::register_widget(vm)) {
+        width: Fill
+        height: Fill
+        list := PortalList{
+            scroll_bar: ScrollBar{}
             auto_tail: true
-            BottomSpace := View {height: 100.0}
-
-            post := CachedView {
+            BottomSpace := View{height: 100.0}
+            post := CachedView{
                 flow: Down
-                user_msg := mod.ui.Post {}
+                user_msg := Post{}
             }
         }
     }
 
-    mod.dialog.DialogPage = #(DialogPage::register_widget(vm)) mod.layout.MessageListPage {
+    mod.widgets.DialogPage = #(DialogPage::register_widget(vm)) MessageListPage {
         contacts +: {
-            mod.dialog_list.ChatList {}
+            ChatList{}
         }
         dialog +: {
-            news_feed := mod.dialog.NewsFeed {}
+            news_feed := NewsFeed{}
             input_bar := View {
                 width: Fill
                 height: Fit
@@ -33,13 +32,13 @@ script_mod! {
                 View {
                     width: Fill
                     height: 150.0
-                    scroll_bars := ScrollBars {}
-                    msg := mod.ui.InputField {
-                            width: Fill
-                            empty_text: "Type a message..."
+                    scroll_bars := ScrollBars{}
+                    msg := SDTextInput{
+                        width: Fill
+                        empty_text: "Type a message..."
                     }
                 }
-                send := mod.ui.Button {text: "Send"}
+                send := SDButton{text: "Send"}
             }
         }
     }
@@ -72,8 +71,14 @@ impl Widget for DialogPage {
         let actions = cx.capture_actions(|cx| {
             self.view.handle_event(cx, event, scope);
         });
-        let send_btn = self.button(cx, ids!(dialog.input_bar.send));
-        if send_btn.clicked(&actions) || self.text_input(cx, ids!(dialog.input_bar.msg)).returned(&actions).is_some() {
+        if self
+            .button(cx, ids!(dialog.input_bar.send))
+            .clicked(&actions)
+            || self
+                .text_input(cx, ids!(dialog.input_bar.msg))
+                .returned(&actions)
+                .is_some()
+        {
             let text = self.text_input(cx, ids!(dialog.input_bar.msg)).text();
             if !text.is_empty() {
                 self.send_message_ws(scope, cx);

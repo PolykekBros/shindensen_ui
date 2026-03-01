@@ -3,14 +3,14 @@ use makepad_widgets::*;
 
 script_mod! {
     use mod.prelude.widgets.*
-    use mod.layout.*
+    use mod.widgets.*
 
-    mod.autho = {}
-
-    mod.autho.LoginForm = #(LoginForm::register_widget(vm)) {
+    mod.widgets.LoginForm = #(LoginForm::register_widget(vm)) {
+        width: Fill
+        height: Fill
         flow: Down
         align: Align { x: 0.5, y: 0.5 }
-    mod.ui.TextLabel {
+        SDLabel{
             text: "Enter your nickname:"
             draw_text +: {
                 text_style +: {
@@ -18,10 +18,10 @@ script_mod! {
                 }
             }
         }
-        nickname := mod.ui.InputField {
+        nickname := SDTextInput{
             empty_text: "Today my name is ..."
         }
-        enter := mod.ui.Button {
+        enter := SDButton{
             text: "Start"
         }
     }
@@ -37,12 +37,10 @@ impl LoginForm {
     fn set_user(&mut self, cx: &mut Cx, scope: &mut Scope) {
         let state = scope.data.get_mut::<State>().expect("State not found.");
         let input = self.text_input(cx, ids!(nickname));
-        let nick = input.text();
+        let nick = input.text().trim().to_owned();
         if !nick.is_empty() {
-            state.screen = Screen::Dialog;
             input.set_text(cx, "");
-            log!("Nickname now is: {}", nick);
-            state.username = nick.clone();
+            state.username = nick.to_owned();
             state.client.authorize(cx, nick);
         }
     }
@@ -58,12 +56,14 @@ impl Widget for LoginForm {
             self.view.handle_event(cx, event, scope);
         });
 
-        if self.button(cx, ids!(enter)).clicked(&actions) {
-            self.set_user(cx, scope);
-        }
-        if self.text_input(cx, ids!(nickname)).returned(&actions).is_some() {
+        if self.view.button(cx, ids!(enter)).clicked(&actions)
+            || self
+                .view
+                .text_input(cx, ids!(nickname))
+                .returned(&actions)
+                .is_some()
+        {
             self.set_user(cx, scope);
         }
     }
 }
-

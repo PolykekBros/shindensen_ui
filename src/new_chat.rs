@@ -3,14 +3,14 @@ use makepad_widgets::*;
 
 script_mod! {
     use mod.prelude.widgets.*
-    use mod.layout.*
+    use mod.widgets.*
 
-    mod.new_chat = {}
-
-    mod.new_chat.NewChat = #(NewChat::register_widget(vm)) {
+    mod.widgets.NewChat = #(NewChat::register_widget(vm)) {
+        width: Fill
+        height: Fill
         flow: Down
         align: Align { x: 0.5, y: 0.5 }
-        mod.ui.TextLabel {
+        SDLabel {
             text: "Enter new chat name:"
             draw_text +: {
                 text_style +: {
@@ -18,25 +18,29 @@ script_mod! {
                 }
             }
         }
-        chat_name := mod.ui.InputField {
+        chat_name := SDTextInput{
             empty_text: "New chat name"
         }
         View {
-            width: Fill, height: Fit
+            width: Fill
+            height: Fit
             align: Align { x: 0.5, y: 0.0 }
             spacing: 10.0
             flow: Right
-            back := mod.ui.Button {
+            back := SDButton{
                 text: "Return"
             }
-            create := mod.ui.Button {
+            create := SDButton{
                 text: "Create"
             }
         }
-        error_label := mod.ui.AlertField { alert_text +: { text: "User not found!" }}
+        error_label := AlertField{
+            alert_text +: {
+                text: "User not found!"
+            }
+        }
     }
 }
-
 
 #[derive(Script, ScriptHook, Widget)]
 struct NewChat {

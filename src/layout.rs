@@ -3,9 +3,7 @@ use makepad_widgets::*;
 script_mod! {
     use mod.prelude.widgets.*
 
-    mod.layout = {}
-
-    mod.layout.MessageListPage = View {
+    mod.widgets.MessageListPage = View {
         height: Fill
         width: Fill
         flow: Right

@@ -2,7 +2,7 @@ use crate::shindensen_client::{ChatInfo, ChatMessage, ShinDensenClient, UserInfo
 use makepad_widgets::Cx;
 use std::collections::HashMap;
 
-#[derive(Default, Debug, PartialEq, Clone)]
+#[derive(Default, Debug, PartialEq, Clone, Copy)]
 pub enum Screen {
     #[default]
     Auth,
@@ -26,15 +26,8 @@ pub struct State {
 impl State {
     pub fn new(api_url: String, ws_url: String) -> Self {
         State {
-            username: String::new(),
-            chat_info: HashMap::new(),
-            msg_history: HashMap::new(),
-            user_info: HashMap::new(),
-            pending_user_fetches: std::collections::HashSet::new(),
-            open_chat_id: None,
-            current_user_id: None,
-            screen: Screen::default(),
             client: ShinDensenClient::new(api_url, ws_url),
+            ..Default::default()
         }
     }
 

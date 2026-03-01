@@ -1,6 +1,6 @@
 use makepad_micro_serde::*;
+use makepad_widgets::makepad_platform::makepad_network::{WsMessage, WsSend};
 use makepad_widgets::*;
-use makepad_widgets::makepad_platform::makepad_network::{WsSend, WsMessage};
 
 #[derive(Default)]
 pub struct ShinDensenClient {
@@ -149,7 +149,10 @@ impl ShinDensenClient {
         }
         let socket_id = live_id!(ShinDensenWebSocket);
         if let Err(err) = cx.net.ws_open(socket_id, request) {
-            cx.action(ShinDensenClientAction::Error(format!("Failed to open WebSocket: {}", err)));
+            cx.action(ShinDensenClientAction::Error(format!(
+                "Failed to open WebSocket: {}",
+                err
+            )));
         } else {
             self.socket = Some(socket_id);
         }
@@ -203,8 +206,14 @@ impl ShinDensenClient {
                 content: Some(text),
                 files: Some(vec![]),
             };
-            if let Err(err) = cx.net.ws_send(socket_id, WsSend::Text(payload.serialize_json())) {
-                cx.action(ShinDensenClientAction::Error(format!("Failed to send WebSocket message: {}", err)));
+            if let Err(err) = cx
+                .net
+                .ws_send(socket_id, WsSend::Text(payload.serialize_json()))
+            {
+                cx.action(ShinDensenClientAction::Error(format!(
+                    "Failed to send WebSocket message: {}",
+                    err
+                )));
             }
         } else {
             cx.action(ShinDensenClientAction::Error(
@@ -220,7 +229,10 @@ impl ShinDensenClient {
     pub fn handle_network_responses(&mut self, cx: &mut Cx, responses: &NetworkResponsesEvent) {
         for event in responses {
             match event {
-                NetworkResponse::HttpResponse { request_id, response } => {
+                NetworkResponse::HttpResponse {
+                    request_id,
+                    response,
+                } => {
                     let data = response.get_string_body().unwrap_or_default();
                     self.handle_response(cx, *request_id, response.status_code, data);
                 }
