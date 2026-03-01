@@ -78,7 +78,8 @@ impl Widget for ChatList {
         let actions = cx.capture_actions(|cx| {
             self.view.handle_event(cx, event, scope);
         });
-
+        let state = scope.data.get_mut::<State>().expect("State not found.");
+        let chat_ids = state.chat_info.keys().copied().collect::<Vec<_>>();
         let portal_list = self.view.portal_list(cx, ids!(chat_list));
         for (item_id, _) in portal_list.items_with_actions(&actions) {
             let item_widget = portal_list.item(cx, item_id, id!(chat));
@@ -87,8 +88,6 @@ impl Widget for ChatList {
                 if let ViewAction::FingerUp(fe) = action.as_widget_action().cast()
                     && body_view.area().rect(cx).contains(fe.abs)
                 {
-                    let state = scope.data.get_mut::<State>().expect("State not found.");
-                    let chat_ids = state.chat_info.keys().copied().collect::<Vec<_>>();
                     if let Some(selected_id) = chat_ids.get(item_id) {
                         state.open_chat_id = Some(*selected_id);
                         self.load_msg_history(cx, state);
@@ -97,9 +96,8 @@ impl Widget for ChatList {
                 }
             }
         }
-
-        let new_chat_btn = self.button(cx, ids!(new_chat_btn));
-        if new_chat_btn.clicked(&actions) {
+        if self.view.button(cx, ids!(new_chat_btn)).clicked(&actions) {
+            log!("handle event chat list");
             cx.action(AppAction::SwitchWindow(Screen::NewChatInit));
         }
     }

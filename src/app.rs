@@ -113,10 +113,6 @@ impl App {
 }
 
 impl MatchEvent for App {
-    fn handle_draw_2d(&mut self, cx: &mut Cx2d) {
-        self.ui.draw_all(cx, &mut Scope::with_data(&mut self.state));
-    }
-
     fn handle_network_responses(&mut self, cx: &mut Cx, responses: &NetworkResponsesEvent) {
         self.state.client.handle_network_responses(cx, responses);
     }
@@ -221,6 +217,7 @@ impl MatchEvent for App {
             }
             match action.cast() {
                 AppAction::SwitchWindow(screen) => {
+                    log!("app action switch window");
                     self.switch_screen(cx, screen);
                 }
                 AppAction::None => (),
