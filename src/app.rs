@@ -6,7 +6,7 @@ use makepad_widgets::*;
 pub const API_URL: &str = "http://127.0.0.1:3000";
 pub const WS_URL: &str = "ws://127.0.0.1:3000/ws";
 // pub const API_URL: &str = "https://api.shindensen.strizhkindenis.ru";
-// pub const WS_URL: &str = "ws://api.shindensen.strizhkindenis.ru/ws";
+// pub const WS_URL: &str = "wss://api.shindensen.strizhkindenis.ru/ws";
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub enum AppAction {
@@ -134,6 +134,11 @@ impl MatchEvent for App {
                     self.load_chats(cx);
                     log!("Authenticated successfully as {}", self.state.username);
                     cx.action(AppAction::SwitchWindow(Screen::Dialog));
+                }
+                ShinDensenClientAction::Ready(user_id) => {
+                    self.state.current_user_id = Some(user_id);
+                    self.state.client.user_get_by_id(cx, user_id);
+                    log!("WebSocket READY: user_id = {}", user_id);
                 }
                 ShinDensenClientAction::NewMessage(msg) => {
                     let sender_id = msg.sender_id;

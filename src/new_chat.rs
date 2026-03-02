@@ -71,10 +71,10 @@ impl Widget for NewChat {
         let chat_search = input.text();
         let btn_create = self.button(cx, ids!(create));
         let btn_back = self.button(cx, ids!(back));
-        if !chat_search.is_empty() {
-            if btn_create.clicked(&actions) || input.returned(&actions).is_some() {
-                self.user_search(cx, state);
-            }
+        if !chat_search.is_empty()
+            && (btn_create.clicked(&actions) || input.returned(&actions).is_some())
+        {
+            self.user_search(cx, state);
         }
 
         if btn_back.clicked(&actions) {

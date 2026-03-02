@@ -87,12 +87,11 @@ impl Widget for ChatList {
             for action in &actions {
                 if let ViewAction::FingerUp(fe) = action.as_widget_action().cast()
                     && body_view.area().rect(cx).contains(fe.abs)
+                    && let Some(selected_id) = chat_ids.get(item_id)
                 {
-                    if let Some(selected_id) = chat_ids.get(item_id) {
-                        state.open_chat_id = Some(*selected_id);
-                        self.load_msg_history(cx, state);
-                        log!("Opened chat: {}", *selected_id);
-                    }
+                    state.open_chat_id = Some(*selected_id);
+                    self.load_msg_history(cx, state);
+                    log!("Opened chat: {}", *selected_id);
                 }
             }
         }

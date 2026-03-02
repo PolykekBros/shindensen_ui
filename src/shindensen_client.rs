@@ -32,6 +32,28 @@ pub struct ChatMessagePayload {
 }
 
 #[derive(SerJson, Debug)]
+pub struct WsIdentify {
+    pub op: String,
+    pub d: WsIdentifyData,
+}
+
+#[derive(SerJson, Debug)]
+pub struct WsIdentifyData {
+    pub token: String,
+}
+
+#[derive(DeJson, Debug)]
+pub struct WsReady {
+    pub op: String,
+    pub d: WsReadyData,
+}
+
+#[derive(DeJson, Debug)]
+pub struct WsReadyData {
+    pub user_id: i64,
+}
+
+#[derive(SerJson, Debug)]
 pub struct InitiateChatPayload {
     pub target_id: i64,
 }
@@ -95,6 +117,7 @@ pub struct ChatInfo {
 #[derive(Clone, Debug, Default, PartialEq)]
 pub enum ShinDensenClientAction {
     Authenticated,
+    Ready(i64),
     NewMessage(ChatMessage),
     Chats(Vec<ChatInfo>),
     History(GetHistoryResponse),
@@ -143,10 +166,8 @@ impl ShinDensenClient {
     }
 
     fn open_socket(&mut self, cx: &mut Cx) {
-        let mut request = HttpRequest::new(self.ws_url.clone(), HttpMethod::GET);
-        if let Some(token) = &self.token {
-            request.set_header("Authorization".to_string(), format!("Bearer {}", token));
-        }
+        let request = HttpRequest::new(self.ws_url.clone(), HttpMethod::GET);
+        // Authorization is now done via the IDENTIFY message
         let socket_id = live_id!(ShinDensenWebSocket);
         if let Err(err) = cx.net.ws_open(socket_id, request) {
             cx.action(ShinDensenClientAction::Error(format!(
@@ -244,13 +265,36 @@ impl ShinDensenClient {
                 }
                 NetworkResponse::WsOpened { socket_id } => {
                     if self.socket == Some(*socket_id) {
-                        log!("WebSocket opened successfully");
+                        log!("WebSocket opened successfully, sending IDENTIFY");
+                        if let Some(token) = &self.token {
+                            let identify = WsIdentify {
+                                op: "IDENTIFY".to_string(),
+                                d: WsIdentifyData {
+                                    token: token.clone(),
+                                },
+                            };
+                            if let Err(err) = cx
+                                .net
+                                .ws_send(*socket_id, WsSend::Text(identify.serialize_json()))
+                            {
+                                error!("Failed to send IDENTIFY: {}", err);
+                            }
+                        }
                     }
                 }
                 NetworkResponse::WsMessage { socket_id, message } => {
                     if self.socket == Some(*socket_id) {
                         match message {
                             WsMessage::Text(data) => {
+                                // Try READY first
+                                if let Ok(ready) = WsReady::deserialize_json(data)
+                                    && ready.op == "READY"
+                                {
+                                    log!("WebSocket READY: user_id = {}", ready.d.user_id);
+                                    cx.action(ShinDensenClientAction::Ready(ready.d.user_id));
+                                    continue;
+                                }
+
                                 if let Ok(msg) = ChatMessage::deserialize_json(data) {
                                     cx.action(ShinDensenClientAction::NewMessage(msg));
                                 }

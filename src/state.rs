@@ -67,18 +67,18 @@ impl State {
             }
         };
 
-        if let Some(name) = &chat.name {
-            if !name.is_empty() {
-                return name.clone();
-            }
+        if let Some(name) = &chat.name
+            && !name.is_empty()
+        {
+            return name.clone();
         }
 
         let mut other_participants = Vec::new();
         for &p_id in &chat.participants {
-            if let Some(my_id) = self.current_user_id {
-                if p_id == my_id {
-                    continue;
-                }
+            if let Some(my_id) = self.current_user_id
+                && p_id == my_id
+            {
+                continue;
             }
             if let Some(user) = self.user_info.get(&p_id) {
                 other_participants.push(
@@ -92,10 +92,10 @@ impl State {
         }
 
         if other_participants.is_empty() {
-            if let Some(my_id) = self.current_user_id {
-                if chat.participants.contains(&my_id) {
-                    return "Saved Messages".to_string();
-                }
+            if let Some(my_id) = self.current_user_id
+                && chat.participants.contains(&my_id)
+            {
+                return "Saved Messages".to_string();
             }
             return chat_id.to_string();
         }
