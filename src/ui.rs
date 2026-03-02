@@ -100,13 +100,13 @@ script_mod! {
     }
 
     mod.widgets.Post = View {
-        width: Fill
+        width: Fit
         height: Fit
         padding: Inset { top: .0, bottom: .0 }
-        margin: Inset { top: 10.0, bottom: 10.0 }
+        margin: Inset { top: 10.0, right: 10.0, bottom: 10.0, left: 10.0 }
 
-        body := RoundedView {
-            width: Fill
+        body := RoundedYView {
+            width: Fit
             height: Fit
             flow: Down
             draw_bg +: {
@@ -116,24 +116,27 @@ script_mod! {
                 border_color: instance(#2d2c40)
             }
 
-            username := RoundedView {
-                width: Fill
+            username := RoundedYView {
+                width: Fit
                 height: Fit
                 padding: Inset { top: 5.0, right: 10.0, bottom: 5.0, left: 10.0 }
                 show_bg: true
                 draw_bg +: {
                     color: instance(#323456)
-                    border_radius: 8.0
+                    border_radius: vec2(8.0, 0.0)
                     border_size: 1.5
                     border_color: instance(#2d2c40)
                 }
-                text := H4 { text: "" }
+                text := H4 {
+                    width: Fit
+                    text: ""
+                }
             }
             content := RoundedView {
-                width: Fill
+                width: Fit
                 height: Fit
                 padding: Inset { top: 10.0, right: 10.0, bottom: 10.0, left: 10.0 }
-                text := P { text: "" }
+                text := Label { text: "" }
             }
         }
     }
@@ -142,7 +145,7 @@ script_mod! {
         width: Fill
         height: Fit
         padding: Inset { top: .0, bottom: .0 }
-        margin: Inset { top: 10.0, bottom: 10.0 }
+        margin: Inset { top: 10.0, right: 10.0, bottom: 10.0, left: 10.0 }
 
         body := RoundedView {
             width: Fill
