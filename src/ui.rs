@@ -4,7 +4,7 @@ script_mod! {
     use mod.prelude.widgets.*
 
     mod.widgets.SDTextInput = TextInput{
-        width: Fill
+        width: 500.0
         height: Fit
         margin: Inset { top: 8.0, right: 8.0, bottom: 8.0, left: 8.0 }
         padding: Inset { top: 10.0, right: 10.0, bottom: 10.0, left: 10.0 }
@@ -102,43 +102,38 @@ script_mod! {
     mod.widgets.Post = View {
         width: Fill
         height: Fit
-        padding: Inset { top: 5.0, right: 5.0, bottom: 5.0, left: 5.0 }
+        padding: Inset { top: .0, bottom: .0 }
+        margin: Inset { top: 10.0, bottom: 10.0 }
 
         body := RoundedView {
             width: Fill
             height: Fit
             flow: Down
-            spacing: 0.0
-
             draw_bg +: {
-                color: #2a2a3a
+                color: instance(#3f497e)
                 border_radius: 8.0
+                border_size: 1.5
+                border_color: instance(#2d2c40)
             }
 
-            username := View {
+            username := RoundedView {
                 width: Fill
                 height: Fit
-                padding: Inset { top: 8.0, right: 12.0, bottom: 4.0, left: 12.0 }
-                text := SDLabel {
-                    draw_text +: {
-                        color: #8888cc,
-                        text_style +: { font_size: 11.0 }
-                    }
+                padding: Inset { top: 5.0, right: 10.0, bottom: 5.0, left: 10.0 }
+                show_bg: true
+                draw_bg +: {
+                    color: instance(#323456)
+                    border_radius: 8.0
+                    border_size: 1.5
+                    border_color: instance(#2d2c40)
                 }
+                text := H4 { text: "" }
             }
-            content := View {
+            content := RoundedView {
                 width: Fill
                 height: Fit
-                padding: Inset { top: 4.0, right: 12.0, bottom: 12.0, left: 12.0 }
-                text := Markdown {
-                    width: Fill
-                    height: Fit
-                    body: ""
-                    draw_text +: {
-                        color: #ffffff,
-                        text_style +: { font_size: 13.0 }
-                    }
-                }
+                padding: Inset { top: 10.0, right: 10.0, bottom: 10.0, left: 10.0 }
+                text := P { text: "" }
             }
         }
     }
@@ -146,32 +141,40 @@ script_mod! {
     mod.widgets.ChatItem = View {
         width: Fill
         height: Fit
-        padding: Inset { top: 2.0, right: 10.0, bottom: 2.0, left: 10.0 }
+        padding: Inset { top: .0, bottom: .0 }
+        margin: Inset { top: 10.0, bottom: 10.0 }
 
         body := RoundedView {
             width: Fill
             height: Fit
             flow: Down
-            padding: Inset { top: 10.0, right: 12.0, bottom: 10.0, left: 12.0 }
-            spacing: 4.0
-
+            cursor: MouseCursor.Hand
             draw_bg +: {
-                color: #00000000
-                color_hover: #ffffff11
+                color: instance(#3f497e)
                 border_radius: 4.0
+                border_color: instance(#2d2c40)
+                border_size: 1.5
             }
 
-            target_usr := SDLabel {
-                draw_text +: {
-                    color: #ffffff,
-                    text_style +: { font_size: 13.0 }
+            target_usr := RoundedView {
+                width: Fill
+                height: Fit
+                padding: Inset { top: 5.0, right: 10.0, bottom: 5.0, left: 10.0 }
+                show_bg: true
+                draw_bg +: {
+                    color: instance(#323456)
+                    color_hover: instance(#3f497e)
+                    border_radius: 4.0
+                    border_color: instance(#2d2c40)
+                    border_size: 1.5
                 }
+                text := H4 { text: "" }
             }
-            last_msg := SDLabel {
-                draw_text +: {
-                    color: #999999,
-                    text_style +: { font_size: 11.0 }
-                }
+            last_msg := RoundedView {
+                width: Fill
+                height: Fit
+                padding: Inset { top: 10.0, right: 10.0, bottom: 10.0, left: 10.0 }
+                text := P { text: "" }
             }
         }
     }

@@ -124,7 +124,7 @@ impl Widget for NewsFeed {
                                 };
                             item.label(cx, ids!(user_msg.body.username.text))
                                 .set_text(cx, &sender_name);
-                            item.markdown(cx, ids!(user_msg.body.content.text))
+                            item.label(cx, ids!(user_msg.body.content.text))
                                 .set_text(cx, msg.content.as_deref().unwrap_or(""));
                         }
                         item.draw_all_unscoped(cx);

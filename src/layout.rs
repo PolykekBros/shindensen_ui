@@ -9,6 +9,9 @@ script_mod! {
         flow: Right
         padding: 0.0
         spacing: 0.0
+        draw_bg +: {
+            color: instance(#3f497e)
+        }
 
         contacts := RoundedView{
             width: 350.0

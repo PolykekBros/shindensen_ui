@@ -53,15 +53,15 @@ impl Widget for ChatList {
                         let item = list.item(cx, item_id, id!(chat));
                         if let Some(chat_id) = chat_ids.get(item_id) {
                             let chat_name = state.get_chat_name(*chat_id);
-                            item.label(cx, ids!(user_chat.body.target_usr))
+                            item.label(cx, ids!(user_chat.body.target_usr.text))
                                 .set_text(cx, &chat_name);
 
                             if let Some(msgs) = state.msg_history.get(chat_id) {
                                 if let Some(last_msg) = msgs.last() {
-                                    item.label(cx, ids!(user_chat.body.last_msg))
+                                    item.label(cx, ids!(user_chat.body.last_msg.text))
                                         .set_text(cx, last_msg.content.as_deref().unwrap_or(""));
                                 } else {
-                                    item.label(cx, ids!(user_chat.body.last_msg))
+                                    item.label(cx, ids!(user_chat.body.last_msg.text))
                                         .set_text(cx, "");
                                 }
                             }

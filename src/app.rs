@@ -77,26 +77,32 @@ impl App {
         match self.state.screen {
             Screen::Auth => {
                 auth_page.set_visible(cx, false);
+                log!("off auth");
             }
             Screen::Dialog => {
                 dialog_page.set_visible(cx, false);
+                log!("off dialog");
             }
             Screen::NewChatInit => {
                 new_chat.set_visible(cx, false);
+                log!("off new chat init");
             }
         }
         match screen {
             Screen::Auth => {
                 auth_page.set_visible(cx, true);
                 auth_page.redraw(cx);
+                log!("display auth");
             }
             Screen::Dialog => {
                 dialog_page.set_visible(cx, true);
                 dialog_page.redraw(cx);
+                log!("display dialog");
             }
             Screen::NewChatInit => {
                 new_chat.set_visible(cx, true);
                 new_chat.redraw(cx);
+                log!("display new chat init");
             }
         }
         self.state.screen = screen;
@@ -107,7 +113,6 @@ impl App {
     }
 
     fn new_chat_init(&mut self, cx: &mut Cx) {
-        self.state.screen = Screen::Dialog;
         self.ui
             .text_input(cx, ids!(main_window.body.new_chat.chat_name))
             .set_text(cx, "");
