@@ -41,12 +41,9 @@ script_mod! {
         width: Fit
         height: Fit
         padding: Inset { top: 8.0, right: 16.0, bottom: 8.0, left: 16.0 }
-        spacing: 5.0
-        flow: Right
 
-        grab_key_focus: true
         visible: true
-        text: "Button"
+        reset_hover_on_click: true
 
         draw_text +: {
             color: #ffffff
@@ -59,7 +56,7 @@ script_mod! {
         draw_bg +: {
             color: #3f497e
             color_hover: #4f5ba0
-            color_down: #2d3560
+            color_down: #3f497e
             border_size: 0.0
             border_radius: 4.0
         }

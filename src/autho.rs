@@ -6,23 +6,29 @@ script_mod! {
     use mod.widgets.*
 
     mod.widgets.LoginForm = #(LoginForm::register_widget(vm)) {
-        width: Fill
-        height: Fill
-        flow: Down
-        align: Align { x: 0.5, y: 0.5 }
-        SDLabel{
-            text: "Enter your nickname:"
-            draw_text +: {
-                text_style +: {
-                    font_size: 12.0
+        SolidView {
+            width: Fill
+            height: Fill
+            flow: Down
+            align: Align { x: 0.5, y: 0.5 }
+            show_bg: true
+            draw_bg +: {
+                color: #26242b
+            }
+            SDLabel{
+                text: "Enter your nickname:"
+                draw_text +: {
+                    text_style +: {
+                        font_size: 12.0
+                    }
                 }
             }
-        }
-        nickname := SDTextInput{
-            empty_text: "Today my name is ..."
-        }
-        enter := SDButton{
-            text: "Start"
+            nickname := SDTextInput{
+                empty_text: "Today my name is ..."
+            }
+            enter := SDButton{
+                text: "Start"
+            }
         }
     }
 }

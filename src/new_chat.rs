@@ -6,37 +6,42 @@ script_mod! {
     use mod.widgets.*
 
     mod.widgets.NewChat = #(NewChat::register_widget(vm)) {
-        width: Fill
-        height: Fill
-        flow: Down
-        align: Align { x: 0.5, y: 0.5 }
-        SDLabel {
-            text: "Enter new chat name:"
-            draw_text +: {
-                text_style +: {
-                    font_size: 12.0
+        SolidView {
+            width: Fill
+            height: Fill
+            flow: Down
+            draw_bg +: {
+                color: #26242b
+            }
+            align: Align { x: 0.5, y: 0.5 }
+            SDLabel {
+                text: "Enter new chat name:"
+                draw_text +: {
+                    text_style +: {
+                        font_size: 12.0
+                    }
                 }
             }
-        }
-        chat_name := SDTextInput{
-            empty_text: "New chat name"
-        }
-        View {
-            width: Fill
-            height: Fit
-            align: Align { x: 0.5, y: 0.0 }
-            spacing: 10.0
-            flow: Right
-            back := SDButton{
-                text: "Return"
+            chat_name := SDTextInput{
+                empty_text: "New chat name"
             }
-            create := SDButton{
-                text: "Create"
+            View {
+                width: Fill
+                height: Fit
+                align: Align { x: 0.5, y: 0.0 }
+                spacing: 10.0
+                flow: Right
+                back := SDButton{
+                    text: "Return"
+                }
+                create := SDButton{
+                    text: "Create"
+                }
             }
-        }
-        error_label := AlertField{
-            alert_text +: {
-                text: "User not found!"
+            error_label := AlertField{
+                alert_text +: {
+                    text: "User not found!"
+                }
             }
         }
     }

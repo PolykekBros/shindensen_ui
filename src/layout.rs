@@ -31,7 +31,7 @@ script_mod! {
             height: Fill
             show_bg: true
             draw_bg +: {
-                color: instance(#2d2c40)
+                color: #26242b
                 border_radius: 5.0
             }
             flow: Down
