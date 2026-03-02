@@ -86,6 +86,7 @@ impl Widget for DialogPage {
                 self.send_message_ws(scope, cx);
             }
         }
+        cx.extend_actions(actions);
     }
 
     fn draw_walk(&mut self, cx: &mut Cx2d, scope: &mut Scope, walk: Walk) -> DrawStep {

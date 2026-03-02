@@ -5,6 +5,8 @@ use makepad_widgets::*;
 
 pub const API_URL: &str = "http://127.0.0.1:3000";
 pub const WS_URL: &str = "ws://127.0.0.1:3000/ws";
+// pub const API_URL: &str = "https://api.shindensen.strizhkindenis.ru";
+// pub const WS_URL: &str = "ws://api.shindensen.strizhkindenis.ru/ws";
 
 #[derive(Clone, Debug, Default, PartialEq)]
 pub enum AppAction {

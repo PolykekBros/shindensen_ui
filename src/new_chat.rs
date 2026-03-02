@@ -82,5 +82,6 @@ impl Widget for NewChat {
             input.set_text(cx, "");
             self.widget(cx, ids!(error_label)).set_visible(cx, false);
         }
+        cx.extend_actions(actions);
     }
 }

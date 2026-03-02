@@ -100,5 +100,6 @@ impl Widget for ChatList {
             log!("handle event chat list");
             cx.action(AppAction::SwitchWindow(Screen::NewChatInit));
         }
+        cx.extend_actions(actions);
     }
 }

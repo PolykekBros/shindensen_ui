@@ -65,5 +65,6 @@ impl Widget for LoginForm {
         {
             self.set_user(cx, scope);
         }
+        cx.extend_actions(actions);
     }
 }
