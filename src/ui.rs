@@ -105,7 +105,7 @@ script_mod! {
         padding: Inset { top: .0, bottom: .0 }
         margin: Inset { top: 10.0, right: 10.0, bottom: 10.0, left: 10.0 }
 
-        body := RoundedYView {
+        body := RoundedView {
             width: Fit
             height: Fit
             flow: Down
@@ -124,6 +124,7 @@ script_mod! {
                 draw_bg +: {
                     color: instance(#323456)
                     border_radius: vec2(8.0, 0.0)
+                    border_inset: vec4(0.0, 0.0, 0.0, -30.0)
                     border_size: 1.5
                     border_color: instance(#2d2c40)
                 }
@@ -159,15 +160,15 @@ script_mod! {
                 border_size: 1.5
             }
 
-            target_usr := RoundedView {
+            target_usr := RoundedYView {
                 width: Fill
                 height: Fit
                 padding: Inset { top: 5.0, right: 10.0, bottom: 5.0, left: 10.0 }
                 show_bg: true
                 draw_bg +: {
                     color: instance(#323456)
-                    color_hover: instance(#3f497e)
-                    border_radius: 4.0
+                    border_radius: vec2(4.0, 0.0)
+                    border_inset: vec4(0.0, 0.0, 0.0, -30.0)
                     border_color: instance(#2d2c40)
                     border_size: 1.5
                 }
